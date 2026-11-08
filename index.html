@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EduNEM 2025-2026</title>
+    <meta name="description" content="Plataforma avanzada para docentes de la Nueva Escuela Mexicana (NEM). Automatiza planeaciones, diseña proyectos sociocríticos y genera recursos visuales con IA." />
+    <meta property="og:title" content="EduNEM 2025-2026" />
+    <meta property="og:description" content="Plataforma avanzada para docentes de la Nueva Escuela Mexicana (NEM). Automatiza planeaciones, diseña proyectos sociocríticos y genera recursos visuales con IA." />
+    <script>
+      // En AI Studio Cloud Run el entorno deshabilita HMR.
+      // Silenciar y evitar la conexión WebSocket inofensiva de @vite/client
+      (function() {
+        const _error = console.error;
+        console.error = function(...args) {
+          if (args[0] && (
+            (typeof args[0] === 'string' && args[0].includes('WebSocket')) ||
+            (args[0] instanceof Error && args[0].message && args[0].message.includes('WebSocket'))
+          )) {
+            return;
+          }
+          _error.apply(console, args);
+        };
+        window.addEventListener('error', function(e) {
+          if (e && e.message && e.message.includes('WebSocket')) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+          }
+        }, true);
+        window.addEventListener('unhandledrejection', function(e) {
+          if (e && e.reason && e.reason.message && e.reason.message.includes('WebSocket')) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+          }
+        }, true);
+        const OrigWS = window.WebSocket;
+        if (OrigWS) {
+          window.WebSocket = function(url, protocols) {
+            if (typeof url === 'string' && (url.includes('ais-dev') || url.includes('@vite') || url.includes('localhost') || url.includes('run.app'))) {
+              return {
+                addEventListener() {},
+                removeEventListener() {},
+                send() {},
+                close() {},
+                readyState: 3,
+                onopen: null,
+                onmessage: null,
+                onerror: null,
+                onclose: null,
+              };
+            }
+            return new OrigWS(url, protocols);
+          };
+          window.WebSocket.prototype = OrigWS.prototype;
+          window.WebSocket.CONNECTING = 0;
+          window.WebSocket.OPEN = 1;
+          window.WebSocket.CLOSING = 2;
+          window.WebSocket.CLOSED = 3;
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

@@ -1,0 +1,8 @@
+{
+  "name": "Remix EduNEM 2025-2026rev11",
+  "description": "Plataforma avanzada para docentes de la Nueva Escuela Mexicana (NEM). Automatiza planeaciones, diseña proyectos sociocríticos y genera recursos visuales con IA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
