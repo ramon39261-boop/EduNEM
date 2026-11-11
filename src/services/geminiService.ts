@@ -7,7 +7,7 @@ export async function generarPlaneacion(prompt: string, signal?: AbortSignal): P
   const combinedSignal = signal || controller.signal;
 
   try {
-    const response = await fetch('/api/planeacion', {
+    const apiKey = import.meta.env.VITE_API_KEY;
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
