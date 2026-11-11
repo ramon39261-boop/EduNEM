@@ -1,19 +1,11 @@
-// api/planeacion.js
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Método no permitido" });
   }
 
-  try {
-    const { prompt } = req.body;
-    
-    // Aquí puedes realizar la llamada a la API de Gemini desde el servidor de Vercel
-    // utilizando process.env.VITE_API_KEY o tu clave privada.
-
-    return res.status(200).json({ 
-      resultado: "Aquí irá tu planeación generada" 
-    });
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
-  }
+  // NVIDIA NIM Chat Completions genera texto; no es un servicio de generación
+  // de imágenes. Se devuelve un error explícito en lugar de una imagen falsa.
+  return res.status(501).json({
+    error: "La generación de ilustraciones requiere un proveedor de imágenes. NVIDIA_API_KEY para chat no habilita por sí sola la creación de imágenes. Las planeaciones y proyectos sí usan NVIDIA.",
+  });
 }
