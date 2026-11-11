@@ -8,9 +8,12 @@ export async function generarPlaneacion(prompt: string, signal?: AbortSignal): P
 
   try {
     const apiKey = import.meta.env.VITE_API_KEY;
+
+    const response = await fetch('/api/planeacion', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}),
       },
       body: JSON.stringify({ prompt }),
       signal: combinedSignal,
