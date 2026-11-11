@@ -94,29 +94,6 @@ const GRADOS_ESCOLARES = [
       "6º de Primaria",
     ],
   },
-  {
-    fase: "Fase 2 - Preescolar",
-    grados: [
-      "1º de Preescolar",
-      "2º de Preescolar",
-      "3º de Preescolar",
-    ],
-  },
-  {
-    fase: "Fase 6 - Secundaria",
-    grados: [
-      "1º de Secundaria",
-      "2º de Secundaria",
-      "3º de Secundaria",
-    ],
-  },
-  {
-    fase: "Otras Modalidades NEM",
-    grados: [
-      "Educación Inicial (Fase 1)",
-      "Multigrado / CAM",
-    ],
-  },
 ];
 
 type View = 'home' | 'planeacion' | 'proyecto' | 'ilustracion';
