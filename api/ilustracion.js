@@ -32,39 +32,37 @@ export default async function handler(req, res) {
     });
   }
 
-  // Traducción y precisión semántica para evitar confusiones comunes en IA
+  // Traducción y precisión semántica optimizada
   let promptTema = textoBase;
   const lower = textoBase.toLowerCase();
 
   if (lower.includes('bandera de mexico') || lower.includes('bandera mexicana')) {
-    promptTema = "Official Mexican flag, rectangular flag with three vertical stripes of green, white, and red, with the national coat of arms of an eagle on a cactus eating a snake in the center white stripe, waving gently";
+    promptTema = "A majestic waving official Mexican flag attached to a silver flagpole with a golden sphere on top, high quality 3D render, realistic fabric texture with folds and wind movement, vertical stripes of green white and red, detailed national coat of arms in the center white stripe";
   } else if (lower.includes('ciclo del agua')) {
-    promptTema = "Water cycle diagram showing evaporation from the ocean, condensation into clouds, precipitation as rain over mountains, and rivers flowing back to the sea";
+    promptTema = "Detailed educational 3D render of the water cycle showing ocean evaporation, cloud formation, rain precipitation over mountains, and rivers flowing back";
   } else if (lower.includes('plato del bien comer') || lower.includes('alimentos')) {
-    promptTema = "Healthy food plate chart divided into fruits, vegetables, grains, and legumes";
-  } else if (lower.includes('planta') || lower.includes('raíz') || lower.includes('hojas')) {
-    promptTema = "Detailed botany diagram of a green flowering plant showing roots in soil, stem, green leaves, and a flower on top";
+    promptTema = "Vibrant 3D educational plate chart divided clearly into food groups: fruits, vegetables, grains, and legumes";
+  } else if (lower.includes('planta') || lower.includes('raíz')) {
+    promptTema = "Detailed botanical 3D educational model of a green flowering plant showing underground roots in soil, stem, leaves, and flower";
   } else if (lower.includes('sistema solar')) {
-    promptTema = "Solar system showing the sun in the center and all eight planets orbiting around it in order";
-  } else if (lower.includes('mapa de mexico') || lower.includes('republica mexicana')) {
-    promptTema = "Accurate geographical outline map of Mexico showing states and borders";
+    promptTema = "Realistic 3D educational model of the solar system with the glowing sun in the center and all planets orbiting around it";
   }
 
-  // Estilos visuales optimizados
-  let estiloPrompt = "clean educational vector illustration, simple graphic design, bright primary colors, plain solid white background";
+  // Estilos visuales con calidad de render profesional
+  let estiloPrompt = "high-end 3D digital render, studio lighting, vivid natural colors, clean isolated solid white background";
   if (estilo === "cientifico") {
-    estiloPrompt = "accurate scientific diagram, clean technical line drawing, anatomical structure, high contrast, solid white background";
+    estiloPrompt = "precise scientific visualization, clean technical 3D render, high contrast studio lighting, solid white background";
   } else if (estilo === "acuarela") {
-    estiloPrompt = "soft pastel watercolor illustration, gentle colors, clean artistic style, solid white background";
+    estiloPrompt = "soft pastel watercolor illustration, gentle artistic lighting, clean white background";
   } else if (estilo === "lineart") {
     estiloPrompt = "black and white outline coloring book page for kids, clean bold outlines, zero shading, solid white background";
   }
 
-  // Prompt estricto anti-texto y anti-distorsiones
+  // Prompt optimizado para aislar el objeto y evitar textos basura
   const prompt = [
     promptTema,
     estiloPrompt,
-    "ONLY the isolated subject filling the frame. NO banners, NO frames, NO headers, NO title boxes, NO text boxes, ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO LABELS, NO WATERMARKS"
+    "ONLY the isolated subject centered in the frame. NO banners, NO frames, NO headers, NO title boxes, NO text boxes, ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO WATERMARKS"
   ].join(", ");
 
   if (prompt.length > 2048) {
