@@ -32,22 +32,22 @@ export default async function handler(req, res) {
     });
   }
 
-  // Modificadores de estilo pedagógico
-  let estiloPrompt = "friendly and age-appropriate educational illustration, clean vector style, bright balanced colors, clean white background.";
+  // Estilos reforzados para evitar texto falso y asegurar calidad didáctica
+  let estiloPrompt = "clean educational vector illustration for elementary school children, bright colors, minimalist design, simple graphic elements, white background.";
   if (estilo === "cientifico") {
-    estiloPrompt = "accurate scientific diagram, clean technical illustration, labeled structure style, high contrast, clean white background, educational textbook style.";
+    estiloPrompt = "accurate scientific diagram, clean technical line drawing, anatomical structure style, high contrast, pure white background, educational textbook graphics.";
   } else if (estilo === "acuarela") {
-    estiloPrompt = "soft watercolor educational illustration for children, gentle pastel colors, clean artistic textbook style, white background.";
+    estiloPrompt = "soft pastel watercolor illustration for children's books, gentle colors, clean artistic style, white background.";
   } else if (estilo === "lineart") {
-    estiloPrompt = "black and white line art coloring book page for school children, clean outlines, no shading, white background.";
+    estiloPrompt = "black and white outline coloring book page for school kids, clean bold outlines, zero shading, pure white background.";
   }
 
+  // Prompt mejorado con restricciones estrictas en inglés para que Flux no invente letras
   const prompt = [
-    "Create a high-quality educational illustration for a Mexican primary school lesson.",
     textoBase,
     estiloPrompt,
-    "Do not include words, letters, captions, labels, watermarks, logos, or signatures. The image must be illustration only.",
-  ].join(" ");
+    "ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO LABELS, NO CAPTIONS, NO WATERMARKS, NO SIGNATURES. ONLY pure visual graphics and icons."
+  ].join(", ");
 
   if (prompt.length > 2048) {
     return res.status(400).json({
@@ -55,7 +55,6 @@ export default async function handler(req, res) {
     });
   }
 
-  // Validar pasos permitidos por Flux.1-schnell (generalmente de 2 a 8)
   const numSteps = Math.min(Math.max(parseInt(pasos, 10) || 4, 2), 8);
 
   const controller = new AbortController();
