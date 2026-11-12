@@ -32,21 +32,26 @@ export default async function handler(req, res) {
     });
   }
 
-  // Traducción/adaptación inteligente de temas comunes para evitar confusiones en inglés
+  // Traducción y precisión semántica para evitar confusiones comunes en IA
   let promptTema = textoBase;
   const lower = textoBase.toLowerCase();
-  if (lower.includes('ciclo del agua')) {
-    promptTema = "Water cycle diagram showing sun, clouds, rain, mountains, river flowing into the ocean";
+
+  if (lower.includes('bandera de mexico') || lower.includes('bandera mexicana')) {
+    promptTema = "Official Mexican flag, rectangular flag with three vertical stripes of green, white, and red, with the national coat of arms of an eagle on a cactus eating a snake in the center white stripe, waving gently";
+  } else if (lower.includes('ciclo del agua')) {
+    promptTema = "Water cycle diagram showing evaporation from the ocean, condensation into clouds, precipitation as rain over mountains, and rivers flowing back to the sea";
   } else if (lower.includes('plato del bien comer') || lower.includes('alimentos')) {
-    promptTema = "Healthy food plate divided into food groups: fruits, vegetables, grains, and legumes";
-  } else if (lower.includes('planta') || lower.includes('raíz')) {
-    promptTema = "Plant anatomy showing roots, stem, leaves, and flower";
+    promptTema = "Healthy food plate chart divided into fruits, vegetables, grains, and legumes";
+  } else if (lower.includes('planta') || lower.includes('raíz') || lower.includes('hojas')) {
+    promptTema = "Detailed botany diagram of a green flowering plant showing roots in soil, stem, green leaves, and a flower on top";
   } else if (lower.includes('sistema solar')) {
-    promptTema = "Solar system with planets orbiting around the sun";
+    promptTema = "Solar system showing the sun in the center and all eight planets orbiting around it in order";
+  } else if (lower.includes('mapa de mexico') || lower.includes('republica mexicana')) {
+    promptTema = "Accurate geographical outline map of Mexico showing states and borders";
   }
 
-  // Estilos estrictos sin marcos ni pósters
-  let estiloPrompt = "clean educational vector illustration, simple shapes, bright primary colors, plain solid white background";
+  // Estilos visuales optimizados
+  let estiloPrompt = "clean educational vector illustration, simple graphic design, bright primary colors, plain solid white background";
   if (estilo === "cientifico") {
     estiloPrompt = "accurate scientific diagram, clean technical line drawing, anatomical structure, high contrast, solid white background";
   } else if (estilo === "acuarela") {
@@ -55,11 +60,11 @@ export default async function handler(req, res) {
     estiloPrompt = "black and white outline coloring book page for kids, clean bold outlines, zero shading, solid white background";
   }
 
-  // Prompt blindado para evitar banners, marcos, títulos y letras
+  // Prompt estricto anti-texto y anti-distorsiones
   const prompt = [
     promptTema,
     estiloPrompt,
-    "ONLY the drawing filling the entire frame. NO banners, NO frames, NO headers, NO title boxes, NO text boxes, ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO LABELS, NO WATERMARKS"
+    "ONLY the isolated subject filling the frame. NO banners, NO frames, NO headers, NO title boxes, NO text boxes, ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO LABELS, NO WATERMARKS"
   ].join(", ");
 
   if (prompt.length > 2048) {
