@@ -1,56 +1,51 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Cormorant Garamond", serif;
-  
-  --color-nem-green: #5A5A40;
-  --color-nem-cream: #f5f5f0;
-  --color-nem-gold: #D4AF37;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-nem-green: #2A4840;
+  --color-nem-green-light: #3A6156;
+  --color-nem-cream: #F6F7F6;
+  --color-nem-gold: #C29B38;
 }
 
 @layer base {
   body {
-    @apply bg-nem-cream text-slate-900 font-sans antialiased;
+    @apply bg-nem-cream text-slate-800 font-sans antialiased selection:bg-nem-green/15 selection:text-nem-green;
   }
-  
+
   h1, h2, h3, h4 {
-    @apply font-serif;
+    @apply font-serif tracking-tight text-slate-900;
   }
 }
 
 .glass-card {
-  @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl rounded-3xl;
-}
-
-.nem-button {
-  @apply bg-nem-green text-white px-6 py-3 rounded-full font-medium transition-all hover:scale-105 active:scale-95 shadow-lg hover:shadow-nem-green/20 disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply bg-white rounded-3xl border border-slate-200/80 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.05)];
 }
 
 .nem-input {
-  @apply w-full px-4 py-3 rounded-2xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-nem-green/20 transition-all;
+  @apply w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-sm
+         focus:bg-white focus:outline-none focus:ring-2 focus:ring-nem-green/20 focus:border-nem-green
+         transition-all duration-200;
 }
 
-@media print {
-  body {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-  }
-  aside, form, nav, .no-print, button {
-    display: none !important;
-  }
-  main {
-    max-width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  .glass-card {
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    background: transparent !important;
-  }
+.nem-button {
+  @apply bg-nem-green text-white font-semibold text-sm px-6 py-3.5 rounded-xl
+         hover:bg-nem-green-light active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none
+         shadow-sm shadow-nem-green/20 transition-all duration-200 cursor-pointer;
 }
 
+/* Scrollbar limpio para las vistas previas */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300;
+}
 
