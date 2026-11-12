@@ -32,21 +32,34 @@ export default async function handler(req, res) {
     });
   }
 
-  // Estilos reforzados para evitar texto falso y asegurar calidad didáctica
-  let estiloPrompt = "clean educational vector illustration for elementary school children, bright colors, minimalist design, simple graphic elements, white background.";
-  if (estilo === "cientifico") {
-    estiloPrompt = "accurate scientific diagram, clean technical line drawing, anatomical structure style, high contrast, pure white background, educational textbook graphics.";
-  } else if (estilo === "acuarela") {
-    estiloPrompt = "soft pastel watercolor illustration for children's books, gentle colors, clean artistic style, white background.";
-  } else if (estilo === "lineart") {
-    estiloPrompt = "black and white outline coloring book page for school kids, clean bold outlines, zero shading, pure white background.";
+  // Traducción/adaptación inteligente de temas comunes para evitar confusiones en inglés
+  let promptTema = textoBase;
+  const lower = textoBase.toLowerCase();
+  if (lower.includes('ciclo del agua')) {
+    promptTema = "Water cycle diagram showing sun, clouds, rain, mountains, river flowing into the ocean";
+  } else if (lower.includes('plato del bien comer') || lower.includes('alimentos')) {
+    promptTema = "Healthy food plate divided into food groups: fruits, vegetables, grains, and legumes";
+  } else if (lower.includes('planta') || lower.includes('raíz')) {
+    promptTema = "Plant anatomy showing roots, stem, leaves, and flower";
+  } else if (lower.includes('sistema solar')) {
+    promptTema = "Solar system with planets orbiting around the sun";
   }
 
-  // Prompt mejorado con restricciones estrictas en inglés para que Flux no invente letras
+  // Estilos estrictos sin marcos ni pósters
+  let estiloPrompt = "clean educational vector illustration, simple shapes, bright primary colors, plain solid white background";
+  if (estilo === "cientifico") {
+    estiloPrompt = "accurate scientific diagram, clean technical line drawing, anatomical structure, high contrast, solid white background";
+  } else if (estilo === "acuarela") {
+    estiloPrompt = "soft pastel watercolor illustration, gentle colors, clean artistic style, solid white background";
+  } else if (estilo === "lineart") {
+    estiloPrompt = "black and white outline coloring book page for kids, clean bold outlines, zero shading, solid white background";
+  }
+
+  // Prompt blindado para evitar banners, marcos, títulos y letras
   const prompt = [
-    textoBase,
+    promptTema,
     estiloPrompt,
-    "ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO LABELS, NO CAPTIONS, NO WATERMARKS, NO SIGNATURES. ONLY pure visual graphics and icons."
+    "ONLY the drawing filling the entire frame. NO banners, NO frames, NO headers, NO title boxes, NO text boxes, ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO LABELS, NO WATERMARKS"
   ].join(", ");
 
   if (prompt.length > 2048) {
