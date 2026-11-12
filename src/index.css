@@ -1,43 +1,78 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 
   --color-nem-green: #2A4840;
   --color-nem-green-light: #3A6156;
+  --color-nem-emerald: #10B981;
   --color-nem-cream: #F6F7F6;
+  --color-nem-dark: #0B1412;
+  --color-nem-dark-card: #12201D;
   --color-nem-gold: #C29B38;
 }
 
 @layer base {
   body {
-    @apply bg-nem-cream text-slate-800 font-sans antialiased selection:bg-nem-green/15 selection:text-nem-green;
+    @apply bg-nem-cream text-slate-800 dark:bg-nem-dark dark:text-slate-100 font-sans antialiased
+           selection:bg-nem-green/20 selection:text-nem-green dark:selection:bg-emerald-500/30 dark:selection:text-emerald-200
+           transition-colors duration-300;
   }
 
   h1, h2, h3, h4 {
-    @apply font-serif tracking-tight text-slate-900;
+    @apply font-serif tracking-tight text-slate-900 dark:text-white;
   }
 }
 
+/* Tarjeta Glassmorphism Avanzada con sutil relieve */
 .glass-card {
-  @apply bg-white rounded-3xl border border-slate-200/80 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.05)];
+  @apply bg-white/90 dark:bg-nem-dark-card/85 backdrop-blur-xl rounded-3xl
+         border border-slate-200/80 dark:border-emerald-900/40
+         shadow-[0_4px_24px_-6px_rgba(15,23,42,0.06)] dark:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.45)]
+         transition-colors duration-300;
+}
+
+/* Borde luminoso sutil para tarjetas destacadas */
+.glow-border {
+  @apply relative overflow-hidden;
+}
+.glow-border::before {
+  content: "";
+  @apply absolute inset-0 rounded-3xl p-[1px] pointer-events-none;
+  background: linear-gradient(135deg, rgba(42, 72, 64, 0.25), rgba(194, 155, 56, 0.2), transparent 60%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.dark .glow-border::before {
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.3), rgba(194, 155, 56, 0.25), transparent 65%);
 }
 
 .nem-input {
-  @apply w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 text-sm
-         focus:bg-white focus:outline-none focus:ring-2 focus:ring-nem-green/20 focus:border-nem-green
+  @apply w-full px-3.5 py-2.5 rounded-xl
+         border border-slate-200 dark:border-emerald-900/50
+         bg-slate-50/70 dark:bg-[#0E1916]
+         text-slate-800 dark:text-slate-100 text-sm
+         focus:bg-white dark:focus:bg-[#152521]
+         focus:outline-none focus:ring-2 focus:ring-nem-green/20 dark:focus:ring-emerald-400/25
+         focus:border-nem-green dark:focus:border-emerald-500/60
          transition-all duration-200;
 }
 
 .nem-button {
-  @apply bg-nem-green text-white font-semibold text-sm px-6 py-3.5 rounded-xl
-         hover:bg-nem-green-light active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none
-         shadow-sm shadow-nem-green/20 transition-all duration-200 cursor-pointer;
+  @apply relative overflow-hidden bg-gradient-to-r from-nem-green to-nem-green-light
+         dark:from-emerald-600 dark:to-teal-600
+         text-white font-semibold text-sm px-6 py-3.5 rounded-xl
+         hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none
+         shadow-md shadow-nem-green/20 dark:shadow-emerald-950/50
+         transition-all duration-200 cursor-pointer;
 }
 
-/* Scrollbar limpio para las vistas previas */
+/* Scrollbar elegante */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -46,6 +81,5 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-200 rounded-full hover:bg-slate-300;
+  @apply bg-slate-200 dark:bg-emerald-900/50 rounded-full hover:bg-slate-300 dark:hover:bg-emerald-800;
 }
-
