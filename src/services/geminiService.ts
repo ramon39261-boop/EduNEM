@@ -68,7 +68,7 @@ export async function generarProyecto(prompt: string, signal?: AbortSignal): Pro
   }
 }
 
-export async function generarIlustracion(descripcion: string, signal?: AbortSignal): Promise<string> {
+export async function generarIlustracion(descripcion: string, estilo: string = 'escolar', pasos: number = 4, signal?: AbortSignal): Promise<string> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 45000);
   const combinedSignal = signal || controller.signal;
@@ -79,7 +79,7 @@ export async function generarIlustracion(descripcion: string, signal?: AbortSign
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ descripcion }),
+      body: JSON.stringify({ descripcion, estilo, pasos }),
       signal: combinedSignal,
     });
 
