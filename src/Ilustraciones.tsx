@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
 
 export default function Ilustraciones() {
-  const [descripcion, setDescripcion] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [descripcion, setDescripcion] = useState<string>('');
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
   // Ideas rápidas alineadas a temas escolares comunes
-  const ideasRapidas = [
+  const ideasRapidas: string[] = [
     "El ciclo del agua simplificado para niños",
     "Plato del Bien Comer con grupos de alimentos",
     "Partes de una planta con raíz, tallo, hojas y flor",
     "Sistema solar con los planetas alrededor del sol"
   ];
 
-  const handleBuscar = async (e) => {
+  const handleBuscar = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!descripcion.trim()) return;
 
@@ -38,8 +38,8 @@ export default function Ilustraciones() {
       }
 
       setImageUrl(data.imageUrl);
-    } catch (err) {
-      setError(err.message);
+    } catch (err: any) {
+      setError(err.message || 'Error desconocido');
     } finally {
       setLoading(false);
     }
