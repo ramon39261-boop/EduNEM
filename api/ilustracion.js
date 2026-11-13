@@ -1,5 +1,5 @@
 /**
- * Generación de ilustraciones educativas con Pollinations AI (Sin tokens ni registros).
+ * Generación de ilustraciones educativas con Pollinations AI (Prompt optimizado).
  */
 
 export const config = {
@@ -22,27 +22,30 @@ export default async function handler(req, res) {
     });
   }
 
-  // Traducción y precisión semántica para EduNEM
+  // Traducción y anclaje semántico estricto para EduNEM
   let promptTema = textoBase;
   const lower = textoBase.toLowerCase();
 
   if (lower.includes('bandera de mexico') || lower.includes('bandera mexicana')) {
-    promptTema = "A majestic waving official Mexican flag attached to a silver flagpole with a golden sphere on top, high quality 3D render, realistic fabric texture with folds and wind movement, vertical stripes of green white and red, detailed national coat of arms in the center white stripe";
+    promptTema = "A majestic waving official Mexican flag attached to a silver flagpole with a golden sphere on top, vertical stripes of green white and red, detailed national coat of arms in the center white stripe";
   } else if (lower.includes('ciclo del agua')) {
-    promptTema = "Detailed educational 3D render of the water cycle showing ocean evaporation, cloud formation, rain precipitation over mountains, and rivers flowing back";
+    promptTema = "Detailed educational 3D scientific diagram of the water cycle, showing ocean evaporation, cloud formation, rain precipitation over mountains, and rivers flowing back";
   } else if (lower.includes('plato del bien comer') || lower.includes('alimentos')) {
-    promptTema = "Vibrant 3D educational plate chart divided clearly into food groups: fruits, vegetables, grains, and legumes";
-  } else if (lower.includes('planta') || lower.includes('raíz')) {
-    promptTema = "Detailed botanical 3D educational model of a green flowering plant showing underground roots in soil, stem, leaves, and flower";
-  } else if (lower.includes('sistema solar')) {
+    promptTema = "Vibrant educational 3D plate chart divided clearly into food groups: fruits, vegetables, grains, and legumes";
+  } else if (lower.includes('planta') || lower.includes('raíz') || lower.includes('fotosíntesis')) {
+    promptTema = "Detailed botanical 3D educational model of a green flowering plant showing underground roots in soil, stem, leaves, and sunlight";
+  } else if (lower.includes('sistema solar') || lower.includes('planetas')) {
     promptTema = "Realistic 3D educational model of the solar system with the glowing sun in the center and all planets orbiting around it";
+  } else {
+    // Prefijo general para asegurar que la IA entienda que es una lámina didáctica clara
+    promptTema = `Clear educational diagram and 3D illustration of: ${textoBase}`;
   }
 
-  let estiloPrompt = "high-end 3D digital render, studio lighting, vivid natural colors, clean isolated solid white background";
+  let estiloPrompt = "high-end 3D digital render, studio lighting, vivid natural colors, clean isolated solid white background, highly detailed";
   if (estilo === "cientifico") {
-    estiloPrompt = "precise scientific visualization, clean technical 3D render, high contrast studio lighting, solid white background";
+    estiloPrompt = "precise scientific visualization, clean technical 3D cross-section render, high contrast studio lighting, solid white background";
   } else if (estilo === "acuarela") {
-    estiloPrompt = "soft pastel watercolor illustration, gentle artistic lighting, clean white background";
+    estiloPrompt = "soft pastel watercolor educational illustration, gentle artistic lighting, clean white background";
   } else if (estilo === "lineart") {
     estiloPrompt = "black and white outline coloring book page for kids, clean bold outlines, zero shading, solid white background";
   }
@@ -63,9 +66,10 @@ export default async function handler(req, res) {
   const timeout = setTimeout(() => controller.abort(), 55000);
 
   try {
-    // Generación limpia mediante URL directa de Pollinations
+    // Añadimos una semilla aleatoria (seed) para que si se reintenta, el motor regenere la imagen con variaciones
+    const randomSeed = Math.floor(Math.random() * 1000000);
     const encodedPrompt = encodeURIComponent(promptFinal);
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&private=true&model=flux`;
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&private=true&model=flux&seed=${randomSeed}`;
 
     clearTimeout(timeout);
     return res.status(200).json({
