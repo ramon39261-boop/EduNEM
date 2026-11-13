@@ -1,6 +1,5 @@
 /**
- * Generación avanzada de ilustraciones educativas con Cloudflare Workers AI.
- * Modelo: FLUX.1-schnell
+ * Generación avanzada de ilustraciones educativas con Cloudflare Workers AI y Agnes AI de respaldo.
  */
 
 export const config = {
@@ -11,15 +10,6 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
       error: "Método no permitido",
-    });
-  }
-
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
-
-  if (!accountId || !apiToken) {
-    return res.status(500).json({
-      error: "Faltan CLOUDFLARE_ACCOUNT_ID o CLOUDFLARE_API_TOKEN en Vercel.",
     });
   }
 
@@ -58,7 +48,6 @@ export default async function handler(req, res) {
     estiloPrompt = "black and white outline coloring book page for kids, clean bold outlines, zero shading, solid white background";
   }
 
-  // Prompt optimizado para aislar el objeto y evitar textos basura
   const prompt = [
     promptTema,
     estiloPrompt,
@@ -73,58 +62,90 @@ export default async function handler(req, res) {
 
   const numSteps = Math.min(Math.max(parseInt(pasos, 10) || 4, 2), 8);
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 55000);
+  // INTENTO 1: Cloudflare Workers AI (Flux.1-schnell)
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+  if (accountId && apiToken) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 50000);
+
+    try {
+      const response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt,
+            steps: numSteps,
+          }),
+          signal: controller.signal,
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok && data.success !== false && data?.result?.image) {
+        clearTimeout(timeout);
+        return res.status(200).json({
+          imageUrl: `data:image/jpeg;base64,${data.result.image}`,
+        });
+      }
+      console.warn("Cloudflare falló o dio límite, intentando respaldo con Agnes AI...");
+    } catch (cfError) {
+      console.warn("Error en Cloudflare, pasando a Agnes AI:", cfError);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  // INTENTO 2: Respaldo automático con Agnes AI (si Cloudflare falla o da 429)
+  const agnesApiKey = process.env.AGNES_API_KEY;
+  if (!agnesApiKey) {
+    return res.status(502).json({
+      error: "Cloudflare alcanzó su límite y falta configurar AGNES_API_KEY en Vercel como respaldo.",
+    });
+  }
+
+  const agnesController = new AbortController();
+  const agnesTimeout = setTimeout(() => agnesController.abort(), 55000);
 
   try {
-    const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt,
-          steps: numSteps,
-        }),
-        signal: controller.signal,
-      }
-    );
+    const agnesResponse = await fetch("https://api.agnes.ai/v1/images/generate", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${agnesApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt,
+        model: "agnes-image-flash",
+      }),
+      signal: agnesController.signal,
+    });
 
-    const data = await response.json().catch(() => ({}));
+    const agnesData = await agnesResponse.json().catch(() => ({}));
 
-    if (!response.ok || data.success === false) {
-      console.error("Cloudflare image error:", response.status, data.errors || data);
-      return res.status(response.status === 429 ? 429 : 502).json({
-        error: "Cloudflare no pudo generar la ilustración. Verifica el servicio y vuelve a intentarlo.",
-      });
+    if (!agnesResponse.ok || !agnesData?.url && !agnesData?.image) {
+      throw new Error(agnesData?.error || "Error en el servicio de Agnes AI");
     }
 
-    const base64Image = data?.result?.image;
+    const finalImageUrl = agnesData.url || `data:image/jpeg;base64,${agnesData.image}`;
 
-    if (!base64Image || typeof base64Image !== "string") {
-      return res.status(502).json({
-        error: "Cloudflare respondió, pero no devolvió una imagen válida.",
-      });
-    }
-
+    clearTimeout(agnesTimeout);
     return res.status(200).json({
-      imageUrl: `data:image/jpeg;base64,${base64Image}`,
+      imageUrl: finalImageUrl,
     });
 
-  } catch (error) {
-    console.error("Cloudflare illustration error:", error);
-    if (error?.name === "AbortError") {
-      return res.status(504).json({
-        error: "Cloudflare tardó demasiado en generar la ilustración.",
-      });
-    }
+  } catch (agnesError) {
+    clearTimeout(agnesTimeout);
+    console.error("Agnes AI fallback error:", agnesError);
     return res.status(502).json({
-      error: "No fue posible conectar con Cloudflare Workers AI.",
+      error: "Cloudflare llegó a su límite diario y el respaldo de Agnes AI no pudo completar la generación.",
     });
-  } finally {
-    clearTimeout(timeout);
   }
 }
