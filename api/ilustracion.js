@@ -1,5 +1,5 @@
 /**
- * Generación avanzada de ilustraciones educativas con Cloudflare Workers AI y Agnes AI de respaldo.
+ * Generación de ilustraciones educativas con Agnes AI.
  */
 
 export const config = {
@@ -13,7 +13,15 @@ export default async function handler(req, res) {
     });
   }
 
-  const { descripcion, prompt: bodyPrompt, estilo = "escolar", pasos = 4 } = req.body || {};
+  const agnesApiKey = process.env.AGNES_API_KEY;
+
+  if (!agnesApiKey) {
+    return res.status(500).json({
+      error: "Falta configurar la variable AGNES_API_KEY en Vercel.",
+    });
+  }
+
+  const { descripcion, prompt: bodyPrompt, estilo = "escolar" } = req.body || {};
   const textoBase = String(descripcion || bodyPrompt || "").trim();
 
   if (!textoBase) {
@@ -22,7 +30,7 @@ export default async function handler(req, res) {
     });
   }
 
-  // Traducción y precisión semántica optimizada
+  // Traducción y precisión semántica para mantener el estándar educativo de EduNEM
   let promptTema = textoBase;
   const lower = textoBase.toLowerCase();
 
@@ -60,62 +68,11 @@ export default async function handler(req, res) {
     });
   }
 
-  const numSteps = Math.min(Math.max(parseInt(pasos, 10) || 4, 2), 8);
-
-  // INTENTO 1: Cloudflare Workers AI (Flux.1-schnell)
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
-
-  if (accountId && apiToken) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 50000);
-
-    try {
-      const response = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            prompt,
-            steps: numSteps,
-          }),
-          signal: controller.signal,
-        }
-      );
-
-      const data = await response.json().catch(() => ({}));
-
-      if (response.ok && data.success !== false && data?.result?.image) {
-        clearTimeout(timeout);
-        return res.status(200).json({
-          imageUrl: `data:image/jpeg;base64,${data.result.image}`,
-        });
-      }
-      console.warn("Cloudflare falló o dio límite, intentando respaldo con Agnes AI...");
-    } catch (cfError) {
-      console.warn("Error en Cloudflare, pasando a Agnes AI:", cfError);
-    } finally {
-      clearTimeout(timeout);
-    }
-  }
-
-  // INTENTO 2: Respaldo automático con Agnes AI (si Cloudflare falla o da 429)
-  const agnesApiKey = process.env.AGNES_API_KEY;
-  if (!agnesApiKey) {
-    return res.status(502).json({
-      error: "Cloudflare alcanzó su límite y falta configurar AGNES_API_KEY en Vercel como respaldo.",
-    });
-  }
-
-  const agnesController = new AbortController();
-  const agnesTimeout = setTimeout(() => agnesController.abort(), 55000);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 55000);
 
   try {
-    const agnesResponse = await fetch("https://api.agnes.ai/v1/images/generate", {
+    const response = await fetch("https://api.agnes.ai/v1/images/generate", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${agnesApiKey}`,
@@ -125,27 +82,35 @@ export default async function handler(req, res) {
         prompt,
         model: "agnes-image-flash",
       }),
-      signal: agnesController.signal,
+      signal: controller.signal,
     });
 
-    const agnesData = await agnesResponse.json().catch(() => ({}));
+    const data = await response.json().catch(() => ({}));
 
-    if (!agnesResponse.ok || !agnesData?.url && !agnesData?.image) {
-      throw new Error(agnesData?.error || "Error en el servicio de Agnes AI");
+    if (!response.ok || (!data?.url && !data?.image)) {
+      console.error("Agnes AI error:", response.status, data);
+      return res.status(502).json({
+        error: "Agnes AI no pudo generar la ilustración. Verifica tu API Key.",
+      });
     }
 
-    const finalImageUrl = agnesData.url || `data:image/jpeg;base64,${agnesData.image}`;
+    const finalImageUrl = data.url || `data:image/jpeg;base64,${data.image}`;
 
-    clearTimeout(agnesTimeout);
+    clearTimeout(timeout);
     return res.status(200).json({
       imageUrl: finalImageUrl,
     });
 
-  } catch (agnesError) {
-    clearTimeout(agnesTimeout);
-    console.error("Agnes AI fallback error:", agnesError);
+  } catch (error) {
+    clearTimeout(timeout);
+    console.error("Agnes AI connection error:", error);
+    if (error?.name === "AbortError") {
+      return res.status(504).json({
+        error: "Agnes AI tardó demasiado en responder.",
+      });
+    }
     return res.status(502).json({
-      error: "Cloudflare llegó a su límite diario y el respaldo de Agnes AI no pudo completar la generación.",
+      error: "No fue posible conectar con el servicio de Agnes AI.",
     });
   }
 }
