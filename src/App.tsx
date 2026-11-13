@@ -1458,6 +1458,9 @@ function IlustracionView() {
                   src={imageUrl}
                   alt="Recurso educativo EduNEM"
                   className="max-h-full max-w-full object-contain rounded-xl"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "https://upload.wikimedia.org/wikipedia/commons/3/3a/Open_book_01.svg";
+                  }}
                 />
               </div>
             </div>
