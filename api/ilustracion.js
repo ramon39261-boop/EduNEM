@@ -1,5 +1,5 @@
 /**
- * Generación de ilustraciones educativas con el router moderno de Hugging Face.
+ * Generación de ilustraciones educativas con el router moderno de Hugging Face y Stable Diffusion 1.5.
  */
 
 export const config = {
@@ -71,9 +71,9 @@ export default async function handler(req, res) {
   const timeout = setTimeout(() => controller.abort(), 55000);
 
   try {
-    // Usando el router oficial y moderno de Hugging Face con Stable Diffusion 2.1
+    // Usando el router moderno con Stable Diffusion 1.5, soportado de forma nativa
     const response = await fetch(
-      "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-2-1",
+      "https://router.huggingface.co/hf-inference/models/runwayml/stable-diffusion-v1-5",
       {
         method: "POST",
         headers: {
