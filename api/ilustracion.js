@@ -1,6 +1,6 @@
 /**
- * Generación de ilustraciones educativas para EduNEM.
- * Endpoint optimizado para respuesta rápida y temática escolar.
+ * Buscador inteligente de láminas y diagramas educativos para EduNEM.
+ * Cero costos, sin límites de IA y con resultados instantáneos en el lienzo.
  */
 
 export const config = {
@@ -14,70 +14,67 @@ export default async function handler(req, res) {
     });
   }
 
-  const { descripcion, prompt: bodyPrompt, estilo = "escolar" } = req.body || {};
-  const textoBase = String(descripcion || bodyPrompt || "").trim();
+  const { descripcion, prompt: bodyPrompt } = req.body || {};
+  const textoBase = String(descripcion || bodyPrompt || "").trim().toLowerCase();
 
   if (!textoBase) {
     return res.status(400).json({
-      error: "Escribe una descripción para la ilustración.",
+      error: "Escribe un tema para buscar el recurso visual.",
     });
   }
 
-  // Traducción y anclaje semántico estricto para temas comunes escolares
-  let promptTema = textoBase;
-  const lower = textoBase.toLowerCase();
+  // 1. Repositorio curado instantáneo para los temas más solicitados en primaria (México / SEP)
+  const repositorioCurado = {
+    "ciclo del agua": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Water_cycle_en.svg/1024px-Water_cycle_en.svg.png",
+    "plato del bien comer": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Plato_del_bien_comer.svg/1024px-Plato_del_bien_comer.svg.png",
+    "partes de la planta": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Plant_anatomy_en.svg/1024px-Plant_anatomy_en.svg.png",
+    "sistema solar": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Solar_system_scale_jup.jpg/1024px-Solar_system_scale_jup.jpg",
+    "bandera de mexico": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Flag_of_Mexico.svg/1024px-Flag_of_Mexico.svg.png",
+    "fotosíntesis": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Plant_photosynthesis_en.svg/1024px-Plant_photosynthesis_en.svg.png"
+  };
 
-  if (lower.includes('bandera de mexico') || lower.includes('bandera mexicana')) {
-    promptTema = "A majestic waving official Mexican flag attached to a silver flagpole with a golden sphere on top, vertical stripes of green white and red, detailed national coat of arms in the center white stripe";
-  } else if (lower.includes('ciclo del agua')) {
-    promptTema = "Detailed educational 3D scientific diagram of the water cycle, showing ocean evaporation, cloud formation, rain precipitation over mountains, and rivers flowing back";
-  } else if (lower.includes('plato del bien comer') || lower.includes('alimentos')) {
-    promptTema = "Vibrant educational 3D plate chart divided clearly into food groups: fruits, vegetables, grains, and legumes";
-  } else if (lower.includes('planta') || lower.includes('raíz') || lower.includes('fotosíntesis')) {
-    promptTema = "Detailed botanical 3D educational model of a green flowering plant showing underground roots in soil, stem, leaves, and sunlight";
-  } else if (lower.includes('sistema solar') || lower.includes('planetas')) {
-    promptTema = "Realistic 3D educational model of the solar system with the glowing sun in the center and all planets orbiting around it";
-  } else {
-    promptTema = `Clear educational diagram and 3D illustration of: ${textoBase}`;
+  let imageUrl = null;
+
+  // Verificamos si el texto del profesor coincide con algún tema curado
+  for (const [key, url] of Object.entries(repositorioCurado)) {
+    if (textoBase.includes(key)) {
+      imageUrl = url;
+      break;
+    }
   }
 
-  // Selección de estilo visual según lo que requiera la planeación didáctica
-  let estiloPrompt = "high-end 3D digital render, studio lighting, vivid natural colors, clean isolated solid white background, highly detailed";
-  if (estilo === "cientifico") {
-    estiloPrompt = "precise scientific visualization, clean technical 3D cross-section render, high contrast studio lighting, solid white background";
-  } else if (estilo === "acuarela") {
-    estiloPrompt = "soft pastel watercolor educational illustration, gentle artistic lighting, clean white background";
-  } else if (estilo === "lineart") {
-    estiloPrompt = "black and white outline coloring book page for kids, clean bold outlines, zero shading, solid white background";
+  // 2. Si es un tema personalizado, consultamos la API pública y gratuita de Wikimedia Commons
+  if (!imageUrl) {
+    try {
+      const queryBusqueda = encodeURIComponent(textoBase + " educational diagram schema vector");
+      const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${queryBusqueda}&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url&format=json`;
+
+      const response = await fetch(wikiUrl, {
+        headers: {
+          "User-Agent": "EduNEM-EducationalPlatform/1.0 (contacto@edunem.mx)"
+        }
+      });
+
+      const data = await response.json();
+      const pages = data?.query?.pages;
+
+      if (pages) {
+        const pageId = Object.keys(pages)[0];
+        if (pages[pageId]?.imageinfo?.[0]?.url) {
+          imageUrl = pages[pageId].imageinfo[0].url;
+        }
+      }
+    } catch (error) {
+      console.error("Error buscando en repositorio educativo:", error);
+    }
   }
 
-  const promptFinal = [
-    promptTema,
-    estiloPrompt,
-    "ONLY the isolated subject centered in the frame. NO banners, NO frames, NO headers, NO title boxes, NO text boxes, ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO WATERMARKS"
-  ].join(", ");
-
-  if (promptFinal.length > 2048) {
-    return res.status(400).json({
-      error: "La descripción es demasiado larga. Reduce el texto e inténtalo de nuevo.",
-    });
+  // 3. Fallback predeterminado si no se encuentra imagen (un icono escolar neutro)
+  if (!imageUrl) {
+    imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Open_book_01.svg/1024px-Open_book_01.svg.png";
   }
 
-  try {
-    const encodedPrompt = encodeURIComponent(promptFinal);
-    const randomSeed = Math.floor(Math.random() * 999999);
-    
-    // Generación mediante modelo turbo optimizado para velocidad
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&private=true&model=turbo&seed=${randomSeed}`;
-
-    return res.status(200).json({
-      imageUrl: imageUrl,
-    });
-
-  } catch (error) {
-    console.error("Error generando ilustración:", error);
-    return res.status(502).json({
-      error: `No fue posible generar la ilustración: ${error.message}`,
-    });
-  }
+  return res.status(200).json({
+    imageUrl: imageUrl,
+  });
 }
