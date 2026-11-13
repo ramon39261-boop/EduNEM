@@ -1,5 +1,5 @@
 /**
- * Generación de ilustraciones educativas con el router moderno de Hugging Face y Stable Diffusion 1.5.
+ * Generación de ilustraciones educativas con Pollinations AI (Sin tokens ni registros).
  */
 
 export const config = {
@@ -10,14 +10,6 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
       error: "Método no permitido",
-    });
-  }
-
-  const hfToken = process.env.HF_TOKEN;
-
-  if (!hfToken) {
-    return res.status(500).json({
-      error: "Falta configurar la variable HF_TOKEN en Vercel.",
     });
   }
 
@@ -55,13 +47,13 @@ export default async function handler(req, res) {
     estiloPrompt = "black and white outline coloring book page for kids, clean bold outlines, zero shading, solid white background";
   }
 
-  const prompt = [
+  const promptFinal = [
     promptTema,
     estiloPrompt,
     "ONLY the isolated subject centered in the frame. NO banners, NO frames, NO headers, NO title boxes, NO text boxes, ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO WATERMARKS"
   ].join(", ");
 
-  if (prompt.length > 2048) {
+  if (promptFinal.length > 2048) {
     return res.status(400).json({
       error: "La descripción es demasiado larga. Reduce el texto e inténtalo de nuevo.",
     });
@@ -71,43 +63,20 @@ export default async function handler(req, res) {
   const timeout = setTimeout(() => controller.abort(), 55000);
 
   try {
-    // Usando el router moderno con Stable Diffusion 1.5, soportado de forma nativa
-    const response = await fetch(
-      "https://router.huggingface.co/hf-inference/models/runwayml/stable-diffusion-v1-5",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${hfToken}`,
-          "Content-Type": "application/json",
-          "x-wait-for-model": "true"
-        },
-        body: JSON.stringify({ inputs: prompt }),
-        signal: controller.signal,
-      }
-    );
-
-    if (!response.ok) {
-      const errText = await response.text().catch(() => "");
-      console.error("Hugging Face Router error:", response.status, errText);
-      return res.status(502).json({
-        error: `Hugging Face respondió con error (${response.status}): ${errText}`,
-      });
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const base64Image = buffer.toString("base64");
+    // Generación limpia mediante URL directa de Pollinations
+    const encodedPrompt = encodeURIComponent(promptFinal);
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&private=true&model=flux`;
 
     clearTimeout(timeout);
     return res.status(200).json({
-      imageUrl: `data:image/jpeg;base64,${base64Image}`,
+      imageUrl: imageUrl,
     });
 
   } catch (error) {
     clearTimeout(timeout);
-    console.error("Hugging Face connection error:", error);
+    console.error("Pollinations connection error:", error);
     return res.status(502).json({
-      error: `No fue posible conectar con Hugging Face: ${error.message}`,
+      error: `No fue posible conectar con el servicio de imágenes: ${error.message}`,
     });
   }
 }
