@@ -34,30 +34,34 @@ export default async function handler(req, res) {
       }
     }
 
-    // 2. Búsqueda en Wikimedia Commons si no está en el curado
+    // 2. Búsqueda en Wikimedia Commons con manejo seguro de errores aislados
     if (!imageUrl) {
-      const queryBusqueda = encodeURIComponent(textoBase + " educational diagram schema vector");
-      const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${queryBusqueda}&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url&format=json`;
+      try {
+        const queryBusqueda = encodeURIComponent(textoBase + " educational diagram schema vector");
+        const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${queryBusqueda}&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url&format=json`;
 
-      const response = await fetch(wikiUrl, {
-        headers: {
-          "User-Agent": "EduNEM-EducationalPlatform/1.0 (contacto@edunem.mx)"
-        }
-      });
+        const response = await fetch(wikiUrl, {
+          headers: {
+            "User-Agent": "EduNEM-EducationalPlatform/1.0 (contacto@edunem.mx)"
+          }
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        const pages = data?.query?.pages;
-        if (pages) {
-          const pageId = Object.keys(pages)[0];
-          if (pages[pageId]?.imageinfo?.[0]?.url) {
-            imageUrl = pages[pageId].imageinfo[0].url;
+        if (response.ok) {
+          const data = await response.json();
+          const pages = data?.query?.pages;
+          if (pages) {
+            const pageId = Object.keys(pages)[0];
+            if (pages[pageId]?.imageinfo?.[0]?.url) {
+              imageUrl = pages[pageId].imageinfo[0].url;
+            }
           }
         }
+      } catch (wikiError) {
+        console.warn("Aviso: Falló la consulta externa a Wikimedia, usando fallback.", wikiError);
       }
     }
 
-    // 3. Fallback seguro por si todo lo demás falla
+    // 3. Fallback seguro predeterminado si no se encuentra imagen o falla la red
     if (!imageUrl) {
       imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Open_book_01.svg/1024px-Open_book_01.svg.png";
     }
@@ -65,7 +69,10 @@ export default async function handler(req, res) {
     return res.status(200).json({ imageUrl });
 
   } catch (error) {
-    console.error("Error en api/ilustracion:", error);
-    return res.status(500).json({ error: "Error interno al procesar la búsqueda del recurso visual." });
+    console.error("Error crítico en api/ilustracion:", error);
+    // Devolvemos un JSON con una imagen por defecto en lugar de un código 500 fatal
+    return res.status(200).json({ 
+      imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Open_book_01.svg/1024px-Open_book_01.svg.png"
+    });
   }
 }
