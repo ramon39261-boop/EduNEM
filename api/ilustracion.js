@@ -1,5 +1,5 @@
 /**
- * Generación de ilustraciones educativas con Hugging Face Router.
+ * Generación de ilustraciones educativas con Hugging Face Router (FLUX actualizado).
  */
 
 export const config = {
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
   const timeout = setTimeout(() => controller.abort(), 55000);
 
   try {
-    // Usando el router oficial moderno de Hugging Face
+    // Usando el modelo de FLUX rápido soportado en el router actual
     const response = await fetch(
       "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
       {
@@ -79,6 +79,7 @@ export default async function handler(req, res) {
         headers: {
           Authorization: `Bearer ${hfToken}`,
           "Content-Type": "application/json",
+          "x-wait-for-model": "true"
         },
         body: JSON.stringify({ inputs: prompt }),
         signal: controller.signal,
