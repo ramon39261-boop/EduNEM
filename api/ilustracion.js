@@ -5,29 +5,35 @@ export default async function handler(req, res) {
 
   try {
     const { descripcion, estilo } = req.body || {};
-    const textoBase = String(descripcion || "").trim();
+    const textoBase = String(descripcion || "").trim().toLowerCase();
     const esBn = estilo === "bn";
 
-    // Semilla numérica basada en el texto para mantener consistencia
-    let seed = 42;
-    for (let i = 0; i < textoBase.length; i++) {
-      seed = (seed + textoBase.charCodeAt(i)) % 1000;
+    // Diccionario con esquemas educativos específicos y precisos
+    const bancoEducativo = {
+      "agua": "https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=1000&auto=format&fit=crop",
+      "plato": "https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=1000&auto=format&fit=crop",
+      "planta": "https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?q=80&w=1000&auto=format&fit=crop",
+      "sistema solar": "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=1000&auto=format&fit=crop"
+    };
+
+    let imageUrl = "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1000&auto=format&fit=crop";
+
+    for (const [key, url] of Object.entries(bancoEducativo)) {
+      if (textoBase.includes(key)) {
+        imageUrl = url;
+        break;
+      }
     }
 
-    // Usamos un servicio de imágenes dinámicas basado en etiquetas y texto descriptivo
-    // Si es blanco y negro, aplicamos parámetros de escala de grises y alto contraste
-    const query = encodeURIComponent(textoBase + " educational school diagram vector illustration");
-    let imageUrl = `https://picsum.photos/seed/${seed}/800/600`;
-
+    // Si el usuario seleccionó Blanco y Negro, aplicamos el parámetro oficial de escala de grises de la URL
     if (esBn) {
-      // Filtro para forzar estilo monocromático / blanco y negro idóneo para fotocopias
-      imageUrl = `https://picsum.photos/seed/${seed}/800/600?grayscale&blur=0`;
+      imageUrl += "&grayscale=1&contrast=20";
     }
 
     return res.status(200).json({ imageUrl });
   } catch (error) {
     return res.status(200).json({ 
-      imageUrl: "https://picsum.photos/seed/edunem/800/600" 
+      imageUrl: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1000&auto=format&fit=crop" 
     });
   }
 }
