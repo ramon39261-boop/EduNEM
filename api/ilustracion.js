@@ -1,5 +1,5 @@
 /**
- * Generación de ilustraciones educativas con Agnes AI.
+ * Generación de ilustraciones educativas con Hugging Face (FLUX.1-schnell).
  */
 
 export const config = {
@@ -13,11 +13,11 @@ export default async function handler(req, res) {
     });
   }
 
-  const agnesApiKey = process.env.AGNES_API_KEY;
+  const hfToken = process.env.HF_TOKEN;
 
-  if (!agnesApiKey) {
+  if (!hfToken) {
     return res.status(500).json({
-      error: "Falta configurar la variable AGNES_API_KEY en Vercel.",
+      error: "Falta configurar la variable HF_TOKEN en Vercel.",
     });
   }
 
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     });
   }
 
-  // Traducción y precisión semántica para mantener el estándar educativo de EduNEM
+  // Traducción y precisión semántica para EduNEM
   let promptTema = textoBase;
   const lower = textoBase.toLowerCase();
 
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     promptTema = "Realistic 3D educational model of the solar system with the glowing sun in the center and all planets orbiting around it";
   }
 
-  // Estilos visuales con calidad de render profesional
+  // Estilos visuales profesionales
   let estiloPrompt = "high-end 3D digital render, studio lighting, vivid natural colors, clean isolated solid white background";
   if (estilo === "cientifico") {
     estiloPrompt = "precise scientific visualization, clean technical 3D render, high contrast studio lighting, solid white background";
@@ -72,40 +72,43 @@ export default async function handler(req, res) {
   const timeout = setTimeout(() => controller.abort(), 55000);
 
   try {
-    const response = await fetch("https://api.agnes.ai/v1/images/generate", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${agnesApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt,
-        model: "agnes-image-flash",
-      }),
-      signal: controller.signal,
-    });
+    // Usando el endpoint oficial y gratuito de Hugging Face para FLUX.1-schnell
+    const response = await fetch(
+      "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${hfToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ inputs: prompt }),
+        signal: controller.signal,
+      }
+    );
 
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok || (!data?.url && !data?.image)) {
-      console.error("Detalle exacto de Agnes AI:", response.status, JSON.stringify(data));
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      console.error("Hugging Face error:", response.status, errText);
       return res.status(502).json({
-        error: `Agnes AI respondió con error (${response.status}): ${data?.message || data?.error || "Estructura desconocida"}`,
+        error: `Hugging Face respondió con error (${response.status}).`,
       });
     }
 
-    const finalImageUrl = data.url || `data:image/jpeg;base64,${data.image}`;
+    // Hugging Face devuelve la imagen directamente en formato binario (buffer)
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64Image = buffer.toString("base64");
 
     clearTimeout(timeout);
     return res.status(200).json({
-      imageUrl: finalImageUrl,
+      imageUrl: `data:image/jpeg;base64,${base64Image}`,
     });
 
   } catch (error) {
     clearTimeout(timeout);
-    console.error("Agnes AI connection error:", error);
+    console.error("Hugging Face connection error:", error);
     return res.status(502).json({
-      error: "No fue posible conectar con el servicio de Agnes AI.",
+      error: "No fue posible conectar con el servicio de Hugging Face.",
     });
   }
 }
