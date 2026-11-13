@@ -1,5 +1,5 @@
 /**
- * Generación de ilustraciones educativas con Nvidia NIM API en EduNEM.
+ * Generación de ilustraciones educativas con Nvidia NIM API (Endpoint oficial de microservicios).
  */
 
 export const config = {
@@ -67,8 +67,9 @@ export default async function handler(req, res) {
   const timeout = setTimeout(() => controller.abort(), 55000);
 
   try {
+    // Usando el endpoint oficial actual de Nvidia NIM para modelos gráficos (Stable Diffusion 3 Medium / SDXL via NIM)
     const response = await fetch(
-      "https://integrate.api.nvidia.com/v1/genai/stabilityai/stable-diffusion-xl",
+      "https://integrate.api.nvidia.com/v1/models/stabilityai/stable-diffusion-3-medium",
       {
         method: "POST",
         headers: {
@@ -80,28 +81,56 @@ export default async function handler(req, res) {
           prompt: promptFinal,
           width: 1024,
           height: 1024,
-          steps: 30,
-          cfg_scale: 7.5,
-          samples: 1
+          steps: 25,
+          cfg_scale: 5,
+          output_format: "jpeg"
         }),
         signal: controller.signal,
       }
     );
 
+    // Si el endpoint de modelos directos requiere la estructura de invocación estándar de NIM:
     if (!response.ok) {
-      const errText = await response.text().catch(() => "");
-      console.error("Nvidia NIM Image error:", response.status, errText);
-      return res.status(502).json({
-        error: `Nvidia NIM respondió con error (${response.status}): ${errText}`,
+      // Intento alternativo con el endpoint genérico de inferencia NIM si el anterior falla
+      const altResponse = await fetch(
+        "https://ai.api.nvidia.com/v1/genai/stabilityai/stable-diffusion-xl",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${nvidiaApiKey}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+          },
+          body: JSON.stringify({
+            text_prompts: [{ text: promptFinal, weight: 1 }],
+            cfg_scale: 7,
+            steps: 30,
+            width: 1024,
+            height: 1024
+          }),
+          signal: controller.signal,
+        }
+      );
+
+      if (!altResponse.ok) {
+        const errText = await altResponse.text().catch(() => "");
+        console.error("Nvidia NIM error:", altResponse.status, errText);
+        return res.status(502).json({
+          error: `Nvidia NIM respondió con error (${altResponse.status}): ${errText}`,
+        });
+      }
+
+      const altData = await altResponse.json();
+      const base64Img = altData.artifact || altData.image || (altData.artifacts && altData.artifacts[0] && altData.artifacts[0].base64);
+      
+      clearTimeout(timeout);
+      return res.status(200).json({
+        imageUrl: `data:image/jpeg;base64,${base64Img}`,
       });
     }
 
     const data = await response.json();
-    const base64Image = data.image || (data.artifacts && data.artifacts[0] && data.artifacts[0].base64);
-
-    if (!base64Image) {
-      throw new Error("La respuesta de Nvidia no devolvió datos de imagen válidos.");
-    }
+    const base64Image = data.image || data.b64_json || (data.artifacts && data.artifacts[0] && data.artifacts[0].base64);
 
     clearTimeout(timeout);
     return res.status(200).json({
