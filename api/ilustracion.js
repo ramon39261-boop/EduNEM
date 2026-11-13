@@ -1,5 +1,5 @@
 /**
- * Generación de ilustraciones educativas con Stable Diffusion v1.4 (Endpoint dedicado).
+ * Generación de ilustraciones educativas con el router moderno de Hugging Face.
  */
 
 export const config = {
@@ -71,9 +71,9 @@ export default async function handler(req, res) {
   const timeout = setTimeout(() => controller.abort(), 55000);
 
   try {
-    // Usando el endpoint clásico y directo que mantiene compatibilidad estable
+    // Usando el router oficial y moderno de Hugging Face con Stable Diffusion 2.1
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/CompVis/stable-diffusion-v1-4",
+      "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-2-1",
       {
         method: "POST",
         headers: {
@@ -88,7 +88,7 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const errText = await response.text().catch(() => "");
-      console.error("Hugging Face API error:", response.status, errText);
+      console.error("Hugging Face Router error:", response.status, errText);
       return res.status(502).json({
         error: `Hugging Face respondió con error (${response.status}): ${errText}`,
       });
