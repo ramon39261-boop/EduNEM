@@ -1,5 +1,5 @@
 /**
- * Generación de ilustraciones educativas con Pollinations AI (Prompt optimizado).
+ * Generación de ilustraciones educativas con Nvidia NIM API en EduNEM.
  */
 
 export const config = {
@@ -10,6 +10,14 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
       error: "Método no permitido",
+    });
+  }
+
+  const nvidiaApiKey = process.env.NVIDIA_API_KEY;
+
+  if (!nvidiaApiKey) {
+    return res.status(500).json({
+      error: "Falta configurar la variable NVIDIA_API_KEY en Vercel.",
     });
   }
 
@@ -37,7 +45,6 @@ export default async function handler(req, res) {
   } else if (lower.includes('sistema solar') || lower.includes('planetas')) {
     promptTema = "Realistic 3D educational model of the solar system with the glowing sun in the center and all planets orbiting around it";
   } else {
-    // Prefijo general para asegurar que la IA entienda que es una lámina didáctica clara
     promptTema = `Clear educational diagram and 3D illustration of: ${textoBase}`;
   }
 
@@ -56,31 +63,56 @@ export default async function handler(req, res) {
     "ONLY the isolated subject centered in the frame. NO banners, NO frames, NO headers, NO title boxes, NO text boxes, ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO WATERMARKS"
   ].join(", ");
 
-  if (promptFinal.length > 2048) {
-    return res.status(400).json({
-      error: "La descripción es demasiado larga. Reduce el texto e inténtalo de nuevo.",
-    });
-  }
-
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 55000);
 
   try {
-    // Añadimos una semilla aleatoria (seed) para que si se reintenta, el motor regenere la imagen con variaciones
-    const randomSeed = Math.floor(Math.random() * 1000000);
-    const encodedPrompt = encodeURIComponent(promptFinal);
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&private=true&model=flux&seed=${randomSeed}`;
+    const response = await fetch(
+      "https://integrate.api.nvidia.com/v1/genai/stabilityai/stable-diffusion-xl",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${nvidiaApiKey}`,
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: promptFinal,
+          width: 1024,
+          height: 1024,
+          steps: 30,
+          cfg_scale: 7.5,
+          samples: 1
+        }),
+        signal: controller.signal,
+      }
+    );
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      console.error("Nvidia NIM Image error:", response.status, errText);
+      return res.status(502).json({
+        error: `Nvidia NIM respondió con error (${response.status}): ${errText}`,
+      });
+    }
+
+    const data = await response.json();
+    const base64Image = data.image || (data.artifacts && data.artifacts[0] && data.artifacts[0].base64);
+
+    if (!base64Image) {
+      throw new Error("La respuesta de Nvidia no devolvió datos de imagen válidos.");
+    }
 
     clearTimeout(timeout);
     return res.status(200).json({
-      imageUrl: imageUrl,
+      imageUrl: `data:image/jpeg;base64,${base64Image}`,
     });
 
   } catch (error) {
     clearTimeout(timeout);
-    console.error("Pollinations connection error:", error);
+    console.error("Nvidia connection error:", error);
     return res.status(502).json({
-      error: `No fue posible conectar con el servicio de imágenes: ${error.message}`,
+      error: `No fue posible conectar con el servicio de Nvidia: ${error.message}`,
     });
   }
 }
