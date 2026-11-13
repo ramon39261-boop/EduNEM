@@ -1,5 +1,6 @@
 /**
- * Generación de ilustraciones educativas con Nvidia NIM API (Endpoint oficial de microservicios).
+ * Generación de ilustraciones educativas para EduNEM.
+ * Endpoint optimizado para respuesta rápida y temática escolar.
  */
 
 export const config = {
@@ -13,14 +14,6 @@ export default async function handler(req, res) {
     });
   }
 
-  const nvidiaApiKey = process.env.NVIDIA_API_KEY;
-
-  if (!nvidiaApiKey) {
-    return res.status(500).json({
-      error: "Falta configurar la variable NVIDIA_API_KEY en Vercel.",
-    });
-  }
-
   const { descripcion, prompt: bodyPrompt, estilo = "escolar" } = req.body || {};
   const textoBase = String(descripcion || bodyPrompt || "").trim();
 
@@ -30,7 +23,7 @@ export default async function handler(req, res) {
     });
   }
 
-  // Traducción y anclaje semántico estricto para EduNEM
+  // Traducción y anclaje semántico estricto para temas comunes escolares
   let promptTema = textoBase;
   const lower = textoBase.toLowerCase();
 
@@ -48,6 +41,7 @@ export default async function handler(req, res) {
     promptTema = `Clear educational diagram and 3D illustration of: ${textoBase}`;
   }
 
+  // Selección de estilo visual según lo que requiera la planeación didáctica
   let estiloPrompt = "high-end 3D digital render, studio lighting, vivid natural colors, clean isolated solid white background, highly detailed";
   if (estilo === "cientifico") {
     estiloPrompt = "precise scientific visualization, clean technical 3D cross-section render, high contrast studio lighting, solid white background";
@@ -63,85 +57,27 @@ export default async function handler(req, res) {
     "ONLY the isolated subject centered in the frame. NO banners, NO frames, NO headers, NO title boxes, NO text boxes, ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO WATERMARKS"
   ].join(", ");
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 55000);
+  if (promptFinal.length > 2048) {
+    return res.status(400).json({
+      error: "La descripción es demasiado larga. Reduce el texto e inténtalo de nuevo.",
+    });
+  }
 
   try {
-    // Usando el endpoint oficial actual de Nvidia NIM para modelos gráficos (Stable Diffusion 3 Medium / SDXL via NIM)
-    const response = await fetch(
-      "https://integrate.api.nvidia.com/v1/models/stabilityai/stable-diffusion-3-medium",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${nvidiaApiKey}`,
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: promptFinal,
-          width: 1024,
-          height: 1024,
-          steps: 25,
-          cfg_scale: 5,
-          output_format: "jpeg"
-        }),
-        signal: controller.signal,
-      }
-    );
+    const encodedPrompt = encodeURIComponent(promptFinal);
+    const randomSeed = Math.floor(Math.random() * 999999);
+    
+    // Generación mediante modelo turbo optimizado para velocidad
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&private=true&model=turbo&seed=${randomSeed}`;
 
-    // Si el endpoint de modelos directos requiere la estructura de invocación estándar de NIM:
-    if (!response.ok) {
-      // Intento alternativo con el endpoint genérico de inferencia NIM si el anterior falla
-      const altResponse = await fetch(
-        "https://ai.api.nvidia.com/v1/genai/stabilityai/stable-diffusion-xl",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${nvidiaApiKey}`,
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-          },
-          body: JSON.stringify({
-            text_prompts: [{ text: promptFinal, weight: 1 }],
-            cfg_scale: 7,
-            steps: 30,
-            width: 1024,
-            height: 1024
-          }),
-          signal: controller.signal,
-        }
-      );
-
-      if (!altResponse.ok) {
-        const errText = await altResponse.text().catch(() => "");
-        console.error("Nvidia NIM error:", altResponse.status, errText);
-        return res.status(502).json({
-          error: `Nvidia NIM respondió con error (${altResponse.status}): ${errText}`,
-        });
-      }
-
-      const altData = await altResponse.json();
-      const base64Img = altData.artifact || altData.image || (altData.artifacts && altData.artifacts[0] && altData.artifacts[0].base64);
-      
-      clearTimeout(timeout);
-      return res.status(200).json({
-        imageUrl: `data:image/jpeg;base64,${base64Img}`,
-      });
-    }
-
-    const data = await response.json();
-    const base64Image = data.image || data.b64_json || (data.artifacts && data.artifacts[0] && data.artifacts[0].base64);
-
-    clearTimeout(timeout);
     return res.status(200).json({
-      imageUrl: `data:image/jpeg;base64,${base64Image}`,
+      imageUrl: imageUrl,
     });
 
   } catch (error) {
-    clearTimeout(timeout);
-    console.error("Nvidia connection error:", error);
+    console.error("Error generando ilustración:", error);
     return res.status(502).json({
-      error: `No fue posible conectar con el servicio de Nvidia: ${error.message}`,
+      error: `No fue posible generar la ilustración: ${error.message}`,
     });
   }
 }
