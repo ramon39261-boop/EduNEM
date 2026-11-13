@@ -88,9 +88,9 @@ export default async function handler(req, res) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok || (!data?.url && !data?.image)) {
-      console.error("Agnes AI error:", response.status, data);
+      console.error("Detalle exacto de Agnes AI:", response.status, JSON.stringify(data));
       return res.status(502).json({
-        error: "Agnes AI no pudo generar la ilustración. Verifica tu API Key.",
+        error: `Agnes AI respondió con error (${response.status}): ${data?.message || data?.error || "Estructura desconocida"}`,
       });
     }
 
@@ -104,11 +104,6 @@ export default async function handler(req, res) {
   } catch (error) {
     clearTimeout(timeout);
     console.error("Agnes AI connection error:", error);
-    if (error?.name === "AbortError") {
-      return res.status(504).json({
-        error: "Agnes AI tardó demasiado en responder.",
-      });
-    }
     return res.status(502).json({
       error: "No fue posible conectar con el servicio de Agnes AI.",
     });
