@@ -7,18 +7,18 @@ export default async function handler(req, res) {
     const { descripcion } = req.body || {};
     const textoBase = String(descripcion || "").trim().toLowerCase();
 
-    // Banco directo de láminas educativas institucionales de alta compatibilidad y formato SVG/PNG directo
-    const bancoDirecto = {
-      "ciclo del agua": "https://upload.wikimedia.org/wikipedia/commons/9/94/Water_cycle_en.svg",
-      "plato del bien comer": "https://upload.wikimedia.org/wikipedia/commons/c/c8/Plato_del_bien_comer.svg",
-      "partes de la planta": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Plant_anatomy_en.svg",
-      "sistema solar": "https://upload.wikimedia.org/wikipedia/commons/c/c3/Solar_system_scale_jup.jpg",
-      "bandera de mexico": "https://upload.wikimedia.org/wikipedia/commons/f/fc/Flag_of_Mexico.svg"
+    // Banco de imágenes educativas estables y garantizadas (PNG directo)
+    const bancoSeguro = {
+      "ciclo del agua": "https://images.unsplash.com/photo-1551582045-6ec9c11d8697?q=80&w=1000&auto=format&fit=crop",
+      "plato del bien comer": "https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=1000&auto=format&fit=crop",
+      "partes de la planta": "https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?q=80&w=1000&auto=format&fit=crop",
+      "sistema solar": "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=1000&auto=format&fit=crop",
+      "bandera de mexico": "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?q=80&w=1000&auto=format&fit=crop"
     };
 
-    let imageUrl = "https://upload.wikimedia.org/wikipedia/commons/3/3a/Open_book_01.svg"; // Fallback por defecto
+    let imageUrl = "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=1000&auto=format&fit=crop"; // Imagen educativa por defecto
 
-    for (const [key, url] of Object.entries(bancoDirecto)) {
+    for (const [key, url] of Object.entries(bancoSeguro)) {
       if (textoBase.includes(key)) {
         imageUrl = url;
         break;
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ imageUrl });
   } catch (error) {
     return res.status(200).json({ 
-      imageUrl: "https://upload.wikimedia.org/wikipedia/commons/3/3a/Open_book_01.svg" 
+      imageUrl: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=1000&auto=format&fit=crop" 
     });
   }
 }
