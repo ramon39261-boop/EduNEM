@@ -1,5 +1,5 @@
 /**
- * Generación de ilustraciones educativas con Hugging Face (FLUX.1-schnell).
+ * Generación de ilustraciones educativas con Hugging Face Router.
  */
 
 export const config = {
@@ -46,7 +46,6 @@ export default async function handler(req, res) {
     promptTema = "Realistic 3D educational model of the solar system with the glowing sun in the center and all planets orbiting around it";
   }
 
-  // Estilos visuales profesionales
   let estiloPrompt = "high-end 3D digital render, studio lighting, vivid natural colors, clean isolated solid white background";
   if (estilo === "cientifico") {
     estiloPrompt = "precise scientific visualization, clean technical 3D render, high contrast studio lighting, solid white background";
@@ -72,9 +71,9 @@ export default async function handler(req, res) {
   const timeout = setTimeout(() => controller.abort(), 55000);
 
   try {
-    // Usando el endpoint oficial y gratuito de Hugging Face para FLUX.1-schnell
+    // Usando el router oficial moderno de Hugging Face
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
+      "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
       {
         method: "POST",
         headers: {
@@ -88,13 +87,12 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const errText = await response.text().catch(() => "");
-      console.error("Hugging Face error:", response.status, errText);
+      console.error("Hugging Face Router error:", response.status, errText);
       return res.status(502).json({
-        error: `Hugging Face respondió con error (${response.status}).`,
+        error: `Hugging Face respondió con error (${response.status}): ${errText}`,
       });
     }
 
-    // Hugging Face devuelve la imagen directamente en formato binario (buffer)
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const base64Image = buffer.toString("base64");
@@ -108,7 +106,7 @@ export default async function handler(req, res) {
     clearTimeout(timeout);
     console.error("Hugging Face connection error:", error);
     return res.status(502).json({
-      error: "No fue posible conectar con el servicio de Hugging Face.",
+      error: `No fue posible conectar con Hugging Face: ${error.message}`,
     });
   }
 }
