@@ -19,23 +19,17 @@ import {
   X,
   CheckCircle2,
   AlertCircle,
-  RotateCcw,
   Copy,
   Check,
   GraduationCap,
   Layers,
-  Wand2,
   Sun,
-  Moon,
-  Eye,
-  LayoutGrid,
-  Printer
+  Moon
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import { 
   generarPlaneacion, 
-  generarProyecto, 
-  generarIlustracion 
+  generarProyecto 
 } from './services/geminiService';
 import { 
   Planeacion, 
@@ -249,7 +243,7 @@ export default function App() {
                 onClick={() => { setCurrentView('ilustracion'); setIsSidebarOpen(false); }} 
                 icon={<ImageIcon size={19} />} 
                 label="Ilustraciones" 
-                badge="IA"
+                badge="Buscador"
               />
             </nav>
           </div>
@@ -373,7 +367,7 @@ function HomeView({ setView }: { setView: (v: View) => void }) {
             <Sparkles size={14} className="text-nem-gold" />
             <span>Asistente Pedagógico Inteligente • Primaria 1º a 6º</span>
           </div>
-          
+           
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif font-extrabold text-slate-900 dark:text-white leading-[1.15]">
             Diseña tus clases de la{" "}
             <span className="bg-gradient-to-r from-nem-green to-emerald-600 dark:from-emerald-400 dark:to-teal-300 bg-clip-text text-transparent">
@@ -381,9 +375,9 @@ function HomeView({ setView }: { setView: (v: View) => void }) {
             </span>{" "}
             en minutos
           </h2>
-          
+           
           <p className="text-slate-500 dark:text-slate-300/80 text-base md:text-lg leading-relaxed max-w-2xl">
-            Automatiza tus planeaciones didácticas vinculadas a los libros SEP, estructura proyectos sociocríticos y crea láminas educativas listas para el aula.
+            Automatiza tus planeaciones didácticas vinculadas a los libros SEP, estructura proyectos sociocríticos y busca láminas educativas listas para el aula.
           </p>
 
           <div className="pt-2 flex flex-wrap gap-3">
@@ -391,7 +385,7 @@ function HomeView({ setView }: { setView: (v: View) => void }) {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setView('planeacion')}
-              className="nem-button flex items-center gap-2"
+              className="nem-button flex items-center gap-2 cursor-pointer"
             >
               <FileText size={18} />
               <span>Crear Planeación Didáctica</span>
@@ -436,9 +430,9 @@ function HomeView({ setView }: { setView: (v: View) => void }) {
           <FeatureCard 
             icon={<ImageIcon className="text-sky-600 dark:text-sky-400" size={24} />}
             iconBg="bg-sky-50 dark:bg-sky-500/15"
-            tag="Visuales sin texto"
-            title="Ilustraciones Educativas"
-            description="Genera esquemas y dibujos didácticos limpios para que tus alumnos los puedan rotular y colorear en clase."
+            tag="Recursos Visuales"
+            title="Láminas Educativas"
+            description="Busca esquemas, diagramas y recursos visuales institucionales para tus clases en tiempo real."
             onClick={() => setView('ilustracion')}
           />
         </div>
@@ -638,7 +632,7 @@ function PlaneacionView() {
       Campo Formativo Vinculado: ${campoVinculado}
       Ejes Articuladores: ${formData.ejes.join(', ')}
       Incluye: Título creativo, vinculación explícita con la lección "${formData.leccion}" del libro oficial "${formData.libroTexto}", PDA específico del programa de estudios 2025-2026, secuencia didáctica completa (Inicio, Desarrollo, Cierre) con actividades didácticas concretas y tiempos sugeridos, evaluación formativa y recursos necesarios.`;
-      
+       
       const data = await generarPlaneacion(prompt, controller.signal);
       setResult({
         ...data,
@@ -777,318 +771,246 @@ function PlaneacionView() {
               {leccionesSugeridas.map((lec) => (
                 <option key={lec} value={lec}>{lec}</option>
               ))}
-              <option value="__custom__">✏️ Escribir otra lección personalizada...</option>
+              <option value="__custom__">✏️ Escribir lección personalizada...</option>
             </select>
 
-            <textarea 
-              required
-              rows={2}
-              className="nem-input resize-none" 
-              placeholder="Ej. Nombrario del grupo (Pág. 18)..." 
-              value={formData.leccion}
-              onChange={e => setFormData({...formData, leccion: e.target.value})}
-            />
-
-            <div className="flex flex-wrap gap-1.5 pt-0.5">
-              {leccionesSugeridas.slice(0, 3).map((lec) => (
-                <button
-                  key={lec}
-                  type="button"
-                  onClick={() => setFormData({...formData, leccion: lec})}
-                  className={cn(
-                    "text-[11px] px-2.5 py-1 rounded-lg border text-left transition-all cursor-pointer truncate max-w-full",
-                    formData.leccion === lec
-                      ? "bg-nem-green/10 dark:bg-emerald-500/20 text-nem-green dark:text-emerald-300 border-nem-green/30 dark:border-emerald-500/40 font-semibold"
-                      : "bg-white dark:bg-nem-dark/70 border-slate-200 dark:border-emerald-900/50 text-slate-500 dark:text-slate-400 hover:border-slate-300"
-                  )}
-                >
-                  {lec}
-                </button>
-              ))}
-            </div>
+            {(!leccionesSugeridas.includes(formData.leccion) || formData.leccion === '') && (
+              <input
+                type="text"
+                className="nem-input mt-2"
+                placeholder="Ej. Mi comunidad escolar y sus costumbres..."
+                value={formData.leccion}
+                onChange={e => setFormData({...formData, leccion: e.target.value})}
+              />
+            )}
           </div>
 
           <hr className="border-slate-100 dark:border-emerald-900/40" />
 
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                <span className="w-5 h-5 rounded-full bg-nem-green dark:bg-emerald-600 text-white flex items-center justify-center text-[11px]">3</span>
-                <span>Ejes Articuladores</span>
-              </div>
-              <span className="text-[11px] text-slate-400">{formData.ejes.length} seleccionados</span>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              {EJES_ARTICULADORES.map(eje => {
+          {/* Ejes Articuladores opcionales */}
+          <div className="space-y-3">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
+              Ejes Articuladores (Opcional)
+            </label>
+            <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1">
+              {EJES_ARTICULADORES.map((eje) => {
                 const selected = formData.ejes.includes(eje);
                 return (
                   <button
                     key={eje}
                     type="button"
                     onClick={() => {
-                      const newEjes = selected
-                        ? formData.ejes.filter(e => e !== eje)
-                        : [...formData.ejes, eje];
-                      setFormData({...formData, ejes: newEjes});
+                      if (selected) {
+                        setFormData({...formData, ejes: formData.ejes.filter(x => x !== eje)});
+                      } else {
+                        setFormData({...formData, ejes: [...formData.ejes, eje]});
+                      }
                     }}
                     className={cn(
-                      "px-3 py-1.5 rounded-xl text-xs font-medium transition-all border cursor-pointer",
-                      selected 
-                        ? "bg-nem-green dark:bg-emerald-600 text-white border-nem-green dark:border-emerald-500 shadow-xs" 
-                        : "bg-white dark:bg-nem-dark/70 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-emerald-900/50 hover:border-nem-green/40 dark:hover:border-emerald-500/40"
+                      "text-[11px] font-medium px-3 py-1.5 rounded-xl border transition-all cursor-pointer",
+                      selected
+                        ? "bg-nem-green dark:bg-emerald-600 text-white border-nem-green dark:border-emerald-600 shadow-xs"
+                        : "bg-slate-50 dark:bg-nem-dark border-slate-200 dark:border-emerald-900/60 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-emerald-900/30"
                     )}
                   >
-                    {eje}
+                    {eje} {selected && "✓"}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          <motion.button 
+          {error && (
+            <div className="p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-2xl flex items-start gap-3">
+              <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={18} />
+              <p className="text-xs text-red-700 dark:text-red-300 leading-relaxed">{error}</p>
+            </div>
+          )}
+
+          <motion.button
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             type="submit"
-            disabled={loading}
-            className="nem-button w-full flex items-center justify-center gap-2"
+            disabled={loading || !formData.leccion.trim()}
+            className="nem-button w-full flex items-center justify-center gap-2 py-4 text-sm font-bold shadow-lg shadow-nem-green/20 dark:shadow-emerald-950/60 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            {loading ? <Loader2 className="animate-spin" size={18} /> : <Wand2 size={18} />}
-            <span>{loading ? `Generando (${seconds}s)...` : "Generar Planeación"}</span>
+            <Sparkles size={18} />
+            <span>Generar Planeación Didáctica</span>
           </motion.button>
-
-          {error && (
-            <div className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-2xl space-y-2">
-              <div className="flex gap-2 text-red-700 dark:text-red-300 text-xs font-medium items-start">
-                <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                <p className="flex-1">{error}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleGenerate()}
-                className="text-xs text-red-700 dark:text-red-300 hover:underline font-bold flex items-center gap-1 cursor-pointer"
-              >
-                <RotateCcw size={12} /> Reintentar
-              </button>
-            </div>
-          )}
         </motion.form>
 
-        {/* Vista Previa / Resultado */}
-        <motion.div variants={staggerItem} className="lg:col-span-7">
+        {/* Panel de Resultados o Estado Inicial */}
+        <div className="lg:col-span-7 space-y-4">
           {loading ? (
             <LoadingCard
-              title="Elaborando Secuencia Didáctica"
+              title="Generando Planeación Didáctica SEP"
               steps={steps}
               seconds={seconds}
               onCancel={handleCancel}
             />
           ) : result ? (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="glass-card glow-border overflow-hidden"
-            >
-              {/* Sticky Action & View Bar */}
-              <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 bg-slate-50/90 dark:bg-[#0E1916]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-emerald-900/40">
-                <div className="flex items-center gap-1.5 bg-slate-200/70 dark:bg-nem-dark p-1 rounded-xl">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('cards')}
-                    className={cn(
-                      "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-                      viewMode === 'cards' 
-                        ? "bg-white dark:bg-nem-dark-card text-slate-900 dark:text-white shadow-xs" 
-                        : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
-                    )}
-                  >
-                    <LayoutGrid size={13} />
-                    <span>Tarjetas</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('document')}
-                    className={cn(
-                      "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-                      viewMode === 'document' 
-                        ? "bg-white dark:bg-nem-dark-card text-slate-900 dark:text-white shadow-xs" 
-                        : "text-slate-500 dark:text-slate-400 hover:text-slate-800"
-                    )}
-                  >
-                    <Eye size={13} />
-                    <span>Hoja Ejecutiva</span>
-                  </button>
+            <motion.div variants={staggerItem} className="glass-card glow-border p-6 md:p-8 space-y-6">
+              {/* Top Bar actions */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-slate-100 dark:border-emerald-900/40">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-nem-green dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-500/30">
+                    {result.grado}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    {result.campoFormativo}
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <div className="flex bg-slate-100 dark:bg-nem-dark p-1 rounded-xl border border-slate-200 dark:border-emerald-900/40">
+                    <button
+                      onClick={() => setViewMode('cards')}
+                      className={cn("px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer", viewMode === 'cards' ? "bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs" : "text-slate-500")}
+                    >
+                      Secciones
+                    </button>
+                    <button
+                      onClick={() => setViewMode('document')}
+                      className={cn("px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer", viewMode === 'document' ? "bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs" : "text-slate-500")}
+                    >
+                      Documento Completo
+                    </button>
+                  </div>
+
                   <button
                     onClick={handleCopy}
-                    type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-emerald-800/60 bg-white dark:bg-nem-dark-card text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-emerald-950/50 transition-colors cursor-pointer"
+                    className="p-2.5 rounded-xl border border-slate-200 dark:border-emerald-800/60 bg-white dark:bg-nem-dark hover:bg-slate-50 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                    title="Copiar contenido"
                   >
-                    {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                    <span>{copied ? "Copiado" : "Copiar"}</span>
+                    {copied ? <Check size={17} className="text-emerald-600" /> : <Copy size={17} />}
                   </button>
-                  <button 
+
+                  <button
                     onClick={downloadDoc}
-                    type="button"
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-nem-green dark:bg-emerald-600 text-white hover:brightness-110 transition-all shadow-xs cursor-pointer"
+                    className="nem-button flex items-center gap-2 py-2.5 px-4 text-xs font-bold shadow-md cursor-pointer"
                   >
-                    <Download size={14} />
-                    <span>Word (.doc)</span>
+                    <Download size={15} />
+                    <span>Descargar Word</span>
                   </button>
                 </div>
               </div>
 
-              {/* Contenido del Resultado */}
+              {/* Título y detalles */}
+              <div className="space-y-3">
+                <h3 className="text-2xl font-serif font-extrabold text-slate-900 dark:text-white">
+                  {result.titulo}
+                </h3>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">📖 {result.libroTexto}</span>
+                  <span>•</span>
+                  <span>Lección: {formData.leccion}</span>
+                </div>
+              </div>
+
+              {/* Ejes Articuladores badge list */}
+              {result.ejesArticuladores && result.ejesArticuladores.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {result.ejesArticuladores.map((eje, idx) => (
+                    <span key={idx} className="text-[11px] font-medium bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-amber-500/30 px-2.5 py-1 rounded-lg">
+                      ✨ {eje}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Contenido según vista */}
               {viewMode === 'cards' ? (
-                <div className="p-6 md:p-8 space-y-6">
-                  <div className="space-y-3 pb-5 border-b border-slate-100 dark:border-emerald-900/40">
-                    <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/15 px-2.5 py-0.5 rounded-full">
-                      <CheckCircle2 size={12} /> Secuencia Didáctica Generada
+                <div className="space-y-4 pt-2">
+                  <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-nem-dark/70 border border-slate-200/80 dark:border-emerald-900/40 space-y-1.5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-nem-green dark:text-emerald-400 flex items-center gap-2">
+                      <GraduationCap size={16} />
+                      <span>Proceso de Desarrollo de Aprendizaje (PDA)</span>
+                    </h4>
+                    <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                      {result.pda}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 rounded-2xl bg-white dark:bg-nem-dark/50 border border-slate-200/80 dark:border-emerald-900/40 space-y-2">
+                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">1. Inicio</h5>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">{result.inicio}</p>
                     </div>
-                    <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">
-                      {result.titulo}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-nem-green/10 dark:bg-emerald-500/20 text-nem-green dark:text-emerald-300">
-                        {result.grado}
-                      </span>
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 flex items-center gap-1">
-                        <BookOpen size={12} /> {result.libroTexto || 'Libro SEP'}
-                      </span>
-                      {result.campoFormativo && (
-                        <span className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                          {result.campoFormativo}
-                        </span>
-                      )}
+                    <div className="p-4 rounded-2xl bg-white dark:bg-nem-dark/50 border border-slate-200/80 dark:border-emerald-900/40 space-y-2">
+                      <h5 className="text-xs font-bold uppercase tracking-wider text-nem-green dark:text-emerald-400">2. Desarrollo</h5>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">{result.desarrollo}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white dark:bg-nem-dark/50 border border-slate-200/80 dark:border-emerald-900/40 space-y-2">
+                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">3. Cierre</h5>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">{result.cierre}</p>
                     </div>
                   </div>
 
-                  <div className="space-y-6">
-                    <div className="p-4 rounded-2xl bg-nem-cream dark:bg-nem-dark/70 border border-slate-200/60 dark:border-emerald-900/40">
-                      <Section title="Proceso de Desarrollo de Aprendizaje (PDA)" content={result.pda} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-nem-dark/70 border border-slate-200/80 dark:border-emerald-900/40 space-y-1.5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Evaluación Formativa</h4>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{result.evaluacion}</p>
                     </div>
-
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Momentos de la Clase</h4>
-                      <div className="space-y-3">
-                        <MomentCard badge="1" title="Inicio" content={result.inicio} accent="border-l-emerald-500" />
-                        <MomentCard badge="2" title="Desarrollo" content={result.desarrollo} accent="border-l-nem-green dark:border-l-teal-400" />
-                        <MomentCard badge="3" title="Cierre" content={result.cierre} accent="border-l-nem-gold" />
-                      </div>
-                    </div>
-
-                    <Section title="Evaluación Formativa" content={result.evaluacion} />
-
-                    <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-emerald-900/40">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Recursos y Materiales</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {(result.recursos || []).map((r, i) => (
-                          <span key={i} className="px-3 py-1 bg-slate-100 dark:bg-nem-dark rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 border border-transparent dark:border-emerald-900/40">
-                            {r}
-                          </span>
+                    <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-nem-dark/70 border border-slate-200/80 dark:border-emerald-900/40 space-y-1.5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Recursos Didácticos</h4>
+                      <ul className="list-disc list-inside text-xs text-slate-600 dark:text-slate-300 space-y-1">
+                        {result.recursos.map((rec, i) => (
+                          <li key={i}>{rec}</li>
                         ))}
-                      </div>
+                      </ul>
                     </div>
                   </div>
                 </div>
               ) : (
-                /* Vista Hoja Ejecutiva (Papel editorial limpio) */
-                <div className="p-4 sm:p-8 bg-slate-100/70 dark:bg-nem-dark/80">
-                  <div className="bg-white text-slate-900 rounded-2xl shadow-md border border-slate-200 p-8 sm:p-10 space-y-6 max-w-2xl mx-auto">
-                    <div className="border-b-2 border-nem-green pb-4 flex justify-between items-start gap-4">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-nem-green">Planeación Didáctica • NEM 2025-2026</p>
-                        <h3 className="text-xl font-extrabold text-slate-900 mt-1">{result.titulo}</h3>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => window.print()}
-                        className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                        title="Imprimir vista"
-                      >
-                        <Printer size={18} />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
-                      <div><strong className="text-slate-500">Grado:</strong> {result.grado}</div>
-                      <div><strong className="text-slate-500">Libro SEP:</strong> {result.libroTexto}</div>
-                      <div className="col-span-2"><strong className="text-slate-500">Campo Formativo:</strong> {result.campoFormativo}</div>
-                    </div>
-
-                    <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
-                      <div>
-                        <h4 className="font-bold text-xs uppercase text-nem-green mb-1">PDA</h4>
-                        <p className="whitespace-pre-line">{result.pda}</p>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-xs uppercase text-nem-green mb-1">1. Inicio</h4>
-                        <p className="whitespace-pre-line">{result.inicio}</p>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-xs uppercase text-nem-green mb-1">2. Desarrollo</h4>
-                        <p className="whitespace-pre-line">{result.desarrollo}</p>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-xs uppercase text-nem-green mb-1">3. Cierre</h4>
-                        <p className="whitespace-pre-line">{result.cierre}</p>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-xs uppercase text-nem-green mb-1">Evaluación Formativa</h4>
-                        <p className="whitespace-pre-line">{result.evaluacion}</p>
-                      </div>
-                    </div>
+                <div className="p-6 rounded-2xl bg-slate-50 dark:bg-nem-dark/80 border border-slate-200 dark:border-emerald-900/40 font-mono text-xs text-slate-700 dark:text-slate-300 space-y-4 max-h-[500px] overflow-y-auto whitespace-pre-line leading-relaxed">
+                  <div>
+                    <strong className="text-nem-green">TÍTULO:</strong> {result.titulo}
+                  </div>
+                  <div>
+                    <strong className="text-nem-green">GRADO Y CAMPO:</strong> {result.grado} | {result.campoFormativo}
+                  </div>
+                  <div>
+                    <strong className="text-nem-green">LIBRO Y LECCIÓN:</strong> {result.libroTexto} - {formData.leccion}
+                  </div>
+                  <div>
+                    <strong className="text-nem-green">PDA:</strong> {result.pda}
+                  </div>
+                  <div>
+                    <strong className="text-nem-green">INICIO:</strong> {result.inicio}
+                  </div>
+                  <div>
+                    <strong className="text-nem-green">DESARROLLO:</strong> {result.desarrollo}
+                  </div>
+                  <div>
+                    <strong className="text-nem-green">CIERRE:</strong> {result.cierre}
+                  </div>
+                  <div>
+                    <strong className="text-nem-green">EVALUACIÓN:</strong> {result.evaluacion}
+                  </div>
+                  <div>
+                    <strong className="text-nem-green">RECURSOS:</strong> {result.recursos.join(', ')}
                   </div>
                 </div>
               )}
             </motion.div>
           ) : (
-            <EmptyPreview 
-              icon={<FileText size={32} className="text-nem-green dark:text-emerald-400" />}
-              title="Vista previa de tu planeación"
-              description="Selecciona el grado, el libro de texto y la lección en el panel izquierdo para generar tu secuencia didáctica."
-            />
+            <motion.div variants={staggerItem} className="h-full min-h-[480px] glass-card glow-border flex flex-col items-center justify-center p-8 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-500/15 text-nem-green dark:text-emerald-400 flex items-center justify-center mb-4 shadow-sm">
+                <FileText size={30} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Listo para planear</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed mb-6">
+                Selecciona tu grado, libro SEP y lección en el panel izquierdo para generar una planeación didáctica rigurosa.
+              </p>
+              <div className="inline-flex items-center gap-2 text-xs font-bold text-nem-green dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15 px-4 py-2 rounded-xl">
+                <Sparkles size={14} />
+                <span>Vinculación oficial SEP 2025-2026</span>
+              </div>
+            </motion.div>
           )}
-        </motion.div>
+        </div>
       </div>
     </motion.div>
-  );
-}
-
-function MomentCard({ badge, title, content, accent }: { badge: string; title: string; content: string; accent: string }) {
-  return (
-    <div className={cn("p-4 rounded-2xl bg-slate-50/80 dark:bg-nem-dark/60 border border-slate-200/60 dark:border-emerald-900/40 border-l-4 space-y-1.5", accent)}>
-      <div className="flex items-center gap-2">
-        <span className="w-5 h-5 rounded-md bg-white dark:bg-nem-dark-card border border-slate-200 dark:border-emerald-800/60 text-xs font-bold text-slate-700 dark:text-emerald-300 flex items-center justify-center">
-          {badge}
-        </span>
-        <h5 className="font-bold text-sm text-slate-900 dark:text-white">{title}</h5>
-      </div>
-      <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">{content || 'En desarrollo'}</p>
-    </div>
-  );
-}
-
-function Section({ title, content }: { title: string; content: string }) {
-  return (
-    <div className="space-y-1.5">
-      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">{title}</h4>
-      <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-line">{content || 'En desarrollo'}</p>
-    </div>
-  );
-}
-
-function EmptyPreview({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
-  return (
-    <div className="h-full min-h-[480px] glass-card flex flex-col items-center justify-center p-10 text-center border-dashed">
-      <div className="w-16 h-16 rounded-2xl bg-nem-green/10 dark:bg-emerald-500/15 flex items-center justify-center mb-4">
-        {icon}
-      </div>
-      <h3 className="text-lg font-bold text-slate-800 dark:text-white">{title}</h3>
-      <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mt-1.5 leading-relaxed">{description}</p>
-    </div>
   );
 }
 
@@ -1100,14 +1022,11 @@ function ProyectoView() {
   const [copied, setCopied] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  const [formData, setFormData] = useState(() => {
-    const gradoInicial = '1º de Primaria';
-    const sugeridas = getProblematicasNEM(gradoInicial);
-    return {
-      problematica: sugeridas[0] || 'Exceso de basura plástica y envolturas a la hora del recreo escolar',
-      metodologia: METODOLOGIAS[0],
-      grado: gradoInicial
-    };
+  const [formData, setFormData] = useState({
+    grado: '3º de Primaria',
+    metodologia: METODOLOGIAS[0],
+    problematica: '',
+    ejes: [] as EjeArticulador[]
   });
 
   const problematicasSugeridas = getProblematicasNEM(formData.grado);
@@ -1143,17 +1062,26 @@ function ProyectoView() {
     setError(null);
 
     try {
-      const prompt = `Diseña un proyecto escolar sociocrítico para la Nueva Escuela Mexicana (NEM) ciclo 2025-2026.
-      Problemática: ${formData.problematica}
-      Metodología: ${formData.metodologia}
-      Grado: ${formData.grado}
-      Incluye: Nombre creativo del proyecto, propósito, fases detalladas según la metodología elegida y producto final.`;
-      
+      const prompt = `Diseña un Proyecto Sociocrítico detallado para el ciclo escolar 2025-2026 de la Nueva Escuela Mexicana (NEM).
+      Grado Escolar: ${formData.grado}
+      Metodología NEM: ${formData.metodologia}
+      Problemática o Situación Comunidad: ${formData.problematica}
+      Ejes Articuladores: ${formData.ejes.join(', ')}
+      Estructura requerida en JSON:
+      - titulo (string)
+      - grado (string)
+      - metodologia (string)
+      - proposito (string)
+      - campoFormativo (string)
+      - fases (array de objetos con { nombre, descripcion, actividades: string[] })
+      - productoFinal (string)
+      - sugerenciasEvaluacion (string)`;
+
       const data = await generarProyecto(prompt, controller.signal);
       setResult(data);
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        setError(err.message || "Ocurrió un error inesperado al diseñar el proyecto.");
+        setError(err.message || "Ocurrió un error al generar el proyecto.");
         console.error(err);
       }
     } finally {
@@ -1165,61 +1093,52 @@ function ProyectoView() {
   const downloadDoc = () => {
     if (!result) return;
     exportarProyectoWord(result, {
-      grado: formData.grado,
+      problematica: formData.problematica,
     });
   };
 
   const handleCopy = () => {
     if (!result) return;
-    const fasesText = (result.fases || [])
-      .map(f => `${f.nombre}:\n${(f.actividades || []).map(a => `- ${a}`).join('\n')}`)
-      .join('\n\n');
-    const text = `${result.nombre}\nMetodología: ${result.metodologia}\n\nPropósito:\n${result.proposito}\n\n${fasesText}\n\nProducto Final:\n${result.productoFinal}`;
+    const text = `${result.titulo}\nMetodología: ${result.metodologia}\n\nPROPÓSITO:\n${result.proposito}\n\nPRODUCTO FINAL:\n${result.productoFinal}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const steps = [
-    "Analizando problemática real de la comunidad escolar...",
-    "Articulando las fases de la metodología sociocrítica elegida...",
-    "Formulando actividades colaborativas y momentos de indagación...",
-    "Definiendo el producto final y estrategias de evaluación...",
+    "Analizando contexto y problemática sociocomunitaria...",
+    "Seleccionando fases metodológicas de la NEM (ABPC/STEAM/ABP/AS)...",
+    "Diseñando experiencias de aprendizaje situadas...",
+    "Vinculando con los Ejes Articuladores y Campos Formativos...",
+    "Estructurando el producto final y evaluación formativa...",
   ];
 
   return (
     <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-6">
       <motion.header variants={staggerItem} className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-emerald-900/40">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-nem-green dark:text-emerald-400">Aprendizaje Sociocrítico</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Metodologías NEM</span>
           <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mt-0.5">Diseñador de Proyectos</h2>
         </div>
-        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">Basados en problemáticas reales de tu comunidad</p>
+        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">Proyectos comunitarios y sociocríticos</p>
       </motion.header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
+        {/* Formulario */}
         <motion.form variants={staggerItem} onSubmit={handleGenerate} className="lg:col-span-5 glass-card p-6 space-y-6">
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-              <span className="w-5 h-5 rounded-full bg-nem-green dark:bg-emerald-600 text-white flex items-center justify-center text-[11px]">1</span>
-              <span>Grado y Metodología</span>
+              <span className="w-5 h-5 rounded-full bg-amber-600 text-white flex items-center justify-center text-[11px]">1</span>
+              <span>Parámetros Metodológicos</span>
             </div>
 
             <div className="space-y-3.5">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Grado Escolar</label>
-                <select 
+                <select
                   className="nem-input cursor-pointer"
                   value={formData.grado}
-                  onChange={e => {
-                    const nuevoGrado = e.target.value;
-                    const nuevasProblemas = getProblematicasNEM(nuevoGrado);
-                    setFormData({
-                      ...formData, 
-                      grado: nuevoGrado,
-                      problematica: nuevasProblemas[0] || formData.problematica
-                    });
-                  }}
+                  onChange={e => setFormData({...formData, grado: e.target.value})}
                 >
                   {GRADOS_ESCOLARES.map((grupo) => (
                     <optgroup key={grupo.fase} label={grupo.fase}>
@@ -1232,13 +1151,15 @@ function ProyectoView() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Metodología Sociocrítica</label>
-                <select 
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Metodología NEM</label>
+                <select
                   className="nem-input cursor-pointer"
                   value={formData.metodologia}
                   onChange={e => setFormData({...formData, metodologia: e.target.value as Metodologia})}
                 >
-                  {METODOLOGIAS.map(m => <option key={m} value={m}>{m}</option>)}
+                  {METODOLOGIAS.map((met) => (
+                    <option key={met} value={met}>{met}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1247,397 +1168,309 @@ function ProyectoView() {
           <hr className="border-slate-100 dark:border-emerald-900/40" />
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                <span className="w-5 h-5 rounded-full bg-nem-green dark:bg-emerald-600 text-white flex items-center justify-center text-[11px]">2</span>
-                <span>Problemática Comunitaria</span>
-              </div>
-              <span className="text-[10px] font-bold text-nem-green dark:text-emerald-300 bg-nem-green/10 dark:bg-emerald-500/20 px-2 py-0.5 rounded-full">
-                Sugeridas
-              </span>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+              <span className="w-5 h-5 rounded-full bg-amber-600 text-white flex items-center justify-center text-[11px]">2</span>
+              <span>Problemática Comunitaria</span>
             </div>
 
-            <select
-              className="nem-input cursor-pointer"
-              value={problematicasSugeridas.includes(formData.problematica) ? formData.problematica : '__custom__'}
-              onChange={e => {
-                if (e.target.value !== '__custom__') {
-                  setFormData({...formData, problematica: e.target.value});
-                }
-              }}
-            >
-              <option value="" disabled>-- Selecciona una problemática --</option>
-              {problematicasSugeridas.map((prob) => (
-                <option key={prob} value={prob}>{prob}</option>
-              ))}
-              <option value="__custom__">✏️ Escribir otra problemática personalizada...</option>
-            </select>
-
-            <textarea 
-              required
-              rows={3}
-              className="nem-input resize-none" 
-              placeholder="Describe la situación o problemática a resolver en tu escuela o comunidad..." 
+            <textarea
+              className="w-full p-4 border border-slate-200 dark:border-emerald-900/60 rounded-2xl bg-white dark:bg-nem-dark focus:ring-2 focus:ring-amber-500 focus:outline-none text-slate-700 dark:text-slate-200 h-28 resize-none text-sm"
+              placeholder="Describe la situación real de la comunidad o selecciona una idea rápida abajo..."
               value={formData.problematica}
               onChange={e => setFormData({...formData, problematica: e.target.value})}
             />
-          </div>
 
-          <motion.button 
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            type="submit"
-            disabled={loading}
-            className="nem-button w-full flex items-center justify-center gap-2"
-          >
-            {loading ? <Loader2 className="animate-spin" size={18} /> : <Wand2 size={18} />}
-            <span>{loading ? `Diseñando (${seconds}s)...` : "Diseñar Proyecto"}</span>
-          </motion.button>
-
-          {error && (
-            <div className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-2xl space-y-2">
-              <div className="flex gap-2 text-red-700 dark:text-red-300 text-xs font-medium items-start">
-                <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                <p className="flex-1">{error}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleGenerate()}
-                className="text-xs text-red-700 dark:text-red-300 hover:underline font-bold flex items-center gap-1 cursor-pointer"
-              >
-                <RotateCcw size={12} /> Reintentar
-              </button>
-            </div>
-          )}
-        </motion.form>
-
-        <motion.div variants={staggerItem} className="lg:col-span-7">
-          {loading ? (
-            <LoadingCard
-              title="Diseñando Proyecto Sociocrítico"
-              steps={steps}
-              seconds={seconds}
-              onCancel={handleCancel}
-            />
-          ) : result ? (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="glass-card glow-border overflow-hidden"
-            >
-              {/* Sticky Action Bar */}
-              <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 px-6 py-3.5 bg-slate-50/90 dark:bg-[#0E1916]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-emerald-900/40">
-                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/15 px-2.5 py-1 rounded-full flex items-center gap-1.5">
-                  <CheckCircle2 size={14} /> Proyecto estructurado
-                </span>
-                <div className="flex items-center gap-2">
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Problemáticas sugeridas:</span>
+              <div className="space-y-1.5">
+                {problematicasSugeridas.map((prob, idx) => (
                   <button
-                    onClick={handleCopy}
+                    key={idx}
                     type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-emerald-800/60 bg-white dark:bg-nem-dark-card text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-emerald-950/50 transition-colors cursor-pointer"
+                    onClick={() => setFormData({...formData, problematica: prob})}
+                    className="w-full text-left text-xs bg-slate-50 dark:bg-nem-dark/70 hover:bg-amber-50 dark:hover:bg-emerald-900/30 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-emerald-950 p-2.5 rounded-xl transition-colors line-clamp-1 cursor-pointer"
                   >
-                    {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                    <span>{copied ? "Copiado" : "Copiar"}</span>
-                  </button>
-                  <button 
-                    onClick={downloadDoc}
-                    type="button"
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-nem-green dark:bg-emerald-600 text-white hover:brightness-110 transition-all shadow-xs cursor-pointer"
-                  >
-                    <Download size={14} />
-                    <span>Word (.doc)</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-6 md:p-8 space-y-6">
-                <div className="space-y-3 pb-5 border-b border-slate-100 dark:border-emerald-900/40">
-                  <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">{result.nombre}</h3>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-nem-green/10 dark:bg-emerald-500/20 text-nem-green dark:text-emerald-300">
-                      {formData.grado}
-                    </span>
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300">
-                      {result.metodologia}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="p-4 rounded-2xl bg-nem-cream dark:bg-nem-dark/70 border border-slate-200/60 dark:border-emerald-900/40">
-                    <Section title="Propósito Formativo" content={result.proposito} />
-                  </div>
-
-                  <div className="space-y-3">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Fases del Proyecto</h4>
-                    <div className="space-y-3">
-                      {(result.fases || []).map((fase, i) => (
-                        <div key={i} className="p-4 bg-slate-50/80 dark:bg-nem-dark/60 rounded-2xl border border-slate-200/60 dark:border-emerald-900/40 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-lg bg-nem-green dark:bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
-                              {i + 1}
-                            </span>
-                            <h5 className="text-sm font-bold text-slate-900 dark:text-white">{fase.nombre}</h5>
-                          </div>
-                          <ul className="space-y-1.5 pl-8">
-                            {(fase.actividades || []).map((act, j) => (
-                              <li key={j} className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed list-disc">
-                                {act}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40">
-                    <Section title="Producto Final Esperado" content={result.productoFinal} />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ) : (
-            <EmptyPreview 
-              icon={<Layout size={32} className="text-nem-green dark:text-emerald-400" />}
-              title="Vista previa de tu proyecto"
-              description="Define el grado, la metodología sociocrítica y la problemática comunitaria para estructurar las fases del proyecto."
-            />
-          )}
-        </motion.div>
-      </div>
-    </motion.div>
-  );
-}
-
-function IlustracionView() {
-  const [loading, setLoading] = useState(false);
-  const [seconds, setSeconds] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState('');
-  const [estilo, setEstilo] = useState('escolar');
-  const [pasos, setPasos] = useState(4);
-  const [image, setImage] = useState<string | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (loading) {
-      setSeconds(0);
-      interval = setInterval(() => setSeconds(s => s + 1), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [loading]);
-
-  const handleCancel = () => {
-    if (abortRef.current) {
-      abortRef.current.abort();
-      abortRef.current = null;
-    }
-    setLoading(false);
-  };
-
-  const handleGenerate = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!prompt.trim()) return;
-
-    if (abortRef.current) {
-      abortRef.current.abort();
-    }
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const url = await generarIlustracion(prompt, estilo, pasos, controller.signal);
-      setImage(url);
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        setError(err.message || "Ocurrió un error inesperado al generar la ilustración.");
-        console.error(err);
-      }
-    } finally {
-      setLoading(false);
-      abortRef.current = null;
-    }
-  };
-
-  const downloadImage = () => {
-    if (!image) return;
-    const link = document.createElement('a');
-    link.href = image;
-    link.download = `Ilustracion_EduNEM_${Date.now()}.jpg`;
-    link.click();
-  };
-
-  const steps = [
-    "Conectando con Cloudflare Workers AI (Flux.1)...",
-    "Renderizando detalles pedagógicos y estilo visual...",
-    "Optimizando contraste y legibilidad para los estudiantes...",
-    "Finalizando recurso didáctico de alta definición...",
-  ];
-
-  return (
-    <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-6">
-      <motion.header variants={staggerItem} className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-emerald-900/40">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-nem-green dark:text-emerald-400">Cloudflare Workers AI</span>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mt-0.5">Creador Avanzado de Ilustraciones</h2>
-        </div>
-        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">Láminas educativas con Flux.1-schnell</p>
-      </motion.header>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
-        <motion.form variants={staggerItem} onSubmit={handleGenerate} className="lg:col-span-5 glass-card p-6 space-y-5">
-          <div className="space-y-3">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
-              1. Describe el recurso visual
-            </label>
-            <textarea 
-              required
-              rows={3}
-              className="nem-input resize-none" 
-              placeholder="Ej. Un ciclo del agua simplificado para niños de primaria..." 
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-            />
-
-            <div className="space-y-1">
-              <p className="text-[11px] font-semibold text-slate-400">Ideas rápidas:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {EJEMPLOS_ILUSTRACION.map((ej) => (
-                  <button
-                    key={ej}
-                    type="button"
-                    onClick={() => setPrompt(ej)}
-                    className="text-[11px] px-2.5 py-1 rounded-lg border border-slate-200 dark:border-emerald-900/50 bg-white dark:bg-nem-dark/70 text-slate-600 dark:text-slate-300 hover:border-nem-green/50 dark:hover:border-emerald-500/50 transition-colors text-left cursor-pointer truncate max-w-[240px]"
-                  >
-                    + {ej}
+                    💡 {prob}
                   </button>
                 ))}
               </div>
             </div>
           </div>
 
-          <hr className="border-slate-100 dark:border-emerald-900/40" />
-
-          {/* Opciones Avanzadas de Cloudflare */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-              <span>2. Opciones de Estilo y Calidad</span>
+          {error && (
+            <div className="p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-2xl flex items-start gap-3">
+              <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={18} />
+              <p className="text-xs text-red-700 dark:text-red-300 leading-relaxed">{error}</p>
             </div>
+          )}
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Estilo Visual</label>
-              <select
-                className="nem-input cursor-pointer"
-                value={estilo}
-                onChange={e => setEstilo(e.target.value)}
-              >
-                <option value="escolar">🎨 Ilustración Escolar a Color (Vectorial amigable)</option>
-                <option value="cientifico">🔬 Diagrama Científico / Técnico</option>
-                <option value="acuarela">🖌️ Acuarela Educativa (Suave y artística)</option>
-                <option value="lineart">✏️ Para Colorear (Líneas en blanco y negro)</option>
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center text-xs">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Pasos de Renderizado (Cloudflare Flux.1)</label>
-                <span className="font-mono font-bold text-nem-green dark:text-emerald-400">{pasos} pasos</span>
-              </div>
-              <input 
-                type="range" 
-                min="2" 
-                max="8" 
-                step="1"
-                value={pasos} 
-                onChange={e => setPasos(parseInt(e.target.value, 10))}
-                className="w-full accent-nem-green dark:accent-emerald-500 cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-slate-400">
-                <span>Más rápido (2)</span>
-                <span>Equilibrado (4)</span>
-                <span>Mayor detalle (8)</span>
-              </div>
-            </div>
-          </div>
-
-          <motion.button 
+          <motion.button
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             type="submit"
-            disabled={loading}
-            className="nem-button w-full flex items-center justify-center gap-2 mt-2"
+            disabled={loading || !formData.problematica.trim()}
+            className="w-full py-4 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold rounded-2xl shadow-lg shadow-amber-600/20 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            {loading ? <Loader2 className="animate-spin" size={18} /> : <Wand2 size={18} />}
-            <span>{loading ? `Generando con Cloudflare (${seconds}s)...` : "Generar con Cloudflare AI"}</span>
+            <Sparkles size={18} />
+            <span>Diseñar Proyecto Sociocrítico</span>
           </motion.button>
-
-          {error && (
-            <div className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-2xl space-y-2">
-              <div className="flex gap-2 text-red-700 dark:text-red-300 text-xs font-medium items-start">
-                <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                <p className="flex-1">{error}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleGenerate()}
-                className="text-xs text-red-700 dark:text-red-300 hover:underline font-bold flex items-center gap-1 cursor-pointer"
-              >
-                <RotateCcw size={12} /> Reintentar
-              </button>
-            </div>
-          )}
         </motion.form>
 
-        <motion.div variants={staggerItem} className="lg:col-span-7">
+        {/* Panel de Resultados */}
+        <div className="lg:col-span-7 space-y-4">
           {loading ? (
             <LoadingCard
-              title="Generando Ilustración con Cloudflare"
+              title="Diseñando Proyecto Sociocrítico NEM"
               steps={steps}
               seconds={seconds}
               onCancel={handleCancel}
             />
-          ) : image ? (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="glass-card glow-border overflow-hidden"
-            >
-              <div className="flex items-center justify-between px-6 py-3.5 bg-slate-50/90 dark:bg-[#0E1916]/90 border-b border-slate-200/80 dark:border-emerald-900/40">
-                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/15 px-2.5 py-1 rounded-full flex items-center gap-1.5">
-                  <CheckCircle2 size={14} /> Flux.1-schnell completado
-                </span>
-                <button
-                  onClick={downloadImage}
-                  type="button"
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-nem-green dark:bg-emerald-600 text-white hover:brightness-110 transition-all shadow-xs cursor-pointer"
-                >
-                  <Download size={14} />
-                  <span>Descargar Imagen</span>
-                </button>
+          ) : result ? (
+            <motion.div variants={staggerItem} className="glass-card glow-border p-6 md:p-8 space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-slate-100 dark:border-emerald-900/40">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-200/70 dark:border-amber-500/30">
+                    {result.grado}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[240px]">
+                    {result.metodologia}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleCopy}
+                    className="p-2.5 rounded-xl border border-slate-200 dark:border-emerald-800/60 bg-white dark:bg-nem-dark hover:bg-slate-50 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                    title="Copiar contenido"
+                  >
+                    {copied ? <Check size={17} className="text-emerald-600" /> : <Copy size={17} />}
+                  </button>
+
+                  <button
+                    onClick={downloadDoc}
+                    className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <Download size={15} />
+                    <span>Descargar Word</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="p-6">
-                <div className="relative group aspect-square max-h-[480px] mx-auto rounded-2xl overflow-hidden border border-slate-200/80 dark:border-emerald-900/40 flex items-center justify-center bg-white p-4">
-                  <img 
-                    src={image} 
-                    alt="Ilustración didáctica generada por Cloudflare" 
-                    className="w-full h-full object-contain rounded-xl" 
-                    referrerPolicy="no-referrer" 
-                  />
+              <div className="space-y-3">
+                <h3 className="text-2xl font-serif font-extrabold text-slate-900 dark:text-white">
+                  {result.titulo}
+                </h3>
+                <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-500/10 border border-amber-200/60 dark:border-amber-500/20 space-y-1">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">Propósito del Proyecto</h4>
+                  <p className="text-xs md:text-sm text-slate-700 dark:text-slate-200 leading-relaxed">{result.proposito}</p>
+                </div>
+              </div>
+
+              {/* Fases del proyecto */}
+              <div className="space-y-4 pt-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Fases del Proyecto</h4>
+                {result.fases.map((fase, idx) => (
+                  <div key={idx} className="p-5 rounded-2xl bg-white dark:bg-nem-dark/60 border border-slate-200 dark:border-emerald-900/40 space-y-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-6 h-6 rounded-full bg-amber-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <h5 className="font-bold text-sm text-slate-900 dark:text-white">{fase.nombre}</h5>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{fase.descripcion}</p>
+                    {fase.actividades && fase.actividades.length > 0 && (
+                      <ul className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-emerald-900/30">
+                        {fase.actividades.map((act, i) => (
+                          <li key={i} className="text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                            <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
+                            <span>{act}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-nem-dark/80 border border-slate-200 dark:border-emerald-900/40 space-y-1.5">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Producto Final</h4>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{result.productoFinal}</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-nem-dark/80 border border-slate-200 dark:border-emerald-900/40 space-y-1.5">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Evaluación Formativa</h4>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{result.sugerenciasEvaluacion}</p>
                 </div>
               </div>
             </motion.div>
           ) : (
-            <EmptyPreview 
-              icon={<ImageIcon size={32} className="text-nem-green dark:text-emerald-400" />}
-              title="Lienzo Cloudflare AI"
-              description="Selecciona un estilo visual, ajusta los pasos de renderizado y genera tu lámina educativa sin texto."
-            />
+            <motion.div variants={staggerItem} className="h-full min-h-[480px] glass-card glow-border flex flex-col items-center justify-center p-8 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4 shadow-sm">
+                <Layout size={30} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Diseño de Proyectos NEM</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed mb-6">
+                Selecciona la metodología y plantea la problemática comunitaria para estructurar un proyecto sociocrítico completo.
+              </p>
+              <div className="inline-flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/15 px-4 py-2 rounded-xl">
+                <Sparkles size={14} />
+                <span>ABPC, STEAM, ABP y AS</span>
+              </div>
+            </motion.div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function IlustracionView() {
+  const [descripcion, setDescripcion] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleBuscar = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!descripcion.trim()) return;
+
+    setLoading(true);
+    setError('');
+    setImageUrl('');
+
+    try {
+      const response = await fetch('/api/ilustracion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ descripcion }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Ocurrió un error al buscar el recurso.');
+      }
+
+      setImageUrl(data.imageUrl);
+    } catch (err: any) {
+      setError(err.message || 'Error desconocido');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-6">
+      <motion.header variants={staggerItem} className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-emerald-900/40">
+        <div>
+          <span className="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">Recursos Visuales</span>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mt-0.5">Buscador de Láminas Educativas</h2>
+        </div>
+        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">Diagramas y esquemas didácticos institucionales</p>
+      </motion.header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
+        {/* Formulario */}
+        <motion.div variants={staggerItem} className="lg:col-span-5 glass-card p-6 space-y-6">
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
+              1. Describe el Recurso Visual Didáctico
+            </h2>
+            
+            <form onSubmit={handleBuscar} className="space-y-4">
+              <textarea
+                className="w-full p-4 border border-slate-200 dark:border-emerald-900/60 rounded-2xl bg-white dark:bg-nem-dark focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-700 dark:text-slate-200 h-32 resize-none text-sm"
+                placeholder="Ej. Partes de una planta con raíz, tallo, hojas y flor..."
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+              />
+
+              {/* Ideas rápidas */}
+              <div>
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+                  Ideas rápidas:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {EJEMPLOS_ILUSTRACION.map((idea, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setDescripcion(idea)}
+                      className="text-xs bg-slate-50 dark:bg-nem-dark/70 hover:bg-sky-50 dark:hover:bg-emerald-900/30 hover:text-sky-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-emerald-950 px-3 py-1.5 rounded-xl transition-colors text-left cursor-pointer"
+                    >
+                      + {idea}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-2xl flex items-start gap-3">
+                  <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={18} />
+                  <p className="text-xs text-red-700 dark:text-red-300 leading-relaxed">{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || !descripcion.trim()}
+                className="w-full py-4 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-2xl shadow-lg shadow-sky-600/20 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin h-5 w-5 text-white" />
+                    <span>Buscando lámina educativa...</span>
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="w-5 h-5" />
+                    <span>Buscar Recurso Visual</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </motion.div>
+
+        {/* Columna Derecha: El Lienzo Educativo */}
+        <motion.div variants={staggerItem} className="lg:col-span-7 glass-card p-6 flex flex-col items-center justify-center min-h-[500px]">
+          {imageUrl ? (
+            <div className="w-full flex flex-col items-center space-y-4">
+              <div className="w-full flex justify-between items-center">
+                <span className="text-xs font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/15 px-3 py-1 rounded-full border border-sky-100 dark:border-sky-500/30">
+                  Lámina lista para clase
+                </span>
+                <a
+                  href={imageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 flex items-center gap-1.5 bg-slate-50 dark:bg-nem-dark hover:bg-slate-100 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-emerald-900/60 transition-colors"
+                >
+                  <Download size={15} />
+                  <span>Descargar Imagen</span>
+                </a>
+              </div>
+              
+              <div className="relative w-full h-[400px] bg-slate-50 dark:bg-nem-dark/80 border border-slate-200 dark:border-emerald-900/60 rounded-2xl overflow-hidden flex items-center justify-center p-2">
+                <img
+                  src={imageUrl}
+                  alt="Recurso educativo EduNEM"
+                  className="max-h-full max-w-full object-contain rounded-xl"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="text-center p-8 space-y-3">
+              <div className="w-16 h-16 bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+                <ImageIcon size={30} />
+              </div>
+              <h3 className="text-base font-semibold text-slate-700 dark:text-white">Lienzo Educativo EduNEM</h3>
+              <p className="text-sm text-slate-400 max-w-xs mx-auto leading-relaxed">
+                Escribe un tema o selecciona una idea rápida para mostrar la lámina didáctica en tiempo real.
+              </p>
+            </div>
           )}
         </motion.div>
       </div>
