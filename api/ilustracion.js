@@ -1,5 +1,5 @@
 /**
- * Generación de ilustraciones educativas con Hugging Face Router (FLUX actualizado).
+ * Generación de ilustraciones educativas con Hugging Face Router (SDXL).
  */
 
 export const config = {
@@ -71,9 +71,9 @@ export default async function handler(req, res) {
   const timeout = setTimeout(() => controller.abort(), 55000);
 
   try {
-    // Usando el modelo de FLUX rápido soportado en el router actual
+    // Usando Stable Diffusion XL, compatible con el router actual de Hugging Face
     const response = await fetch(
-      "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
+      "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0",
       {
         method: "POST",
         headers: {
