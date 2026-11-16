@@ -14,68 +14,159 @@ export default async function handler(req, res) {
 
     const bn = estilo === "bn";
 
+    const normalizar = (valor) =>
+      String(valor || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+
     const traducciones = {
-      "ciclo del agua": "water cycle diagram",
+      "ciclo del agua": "water cycle",
       "plato del bien comer": "healthy eating plate food groups",
-      "partes de una planta": "plant parts anatomy diagram",
-      "sistema solar": "solar system planets educational diagram",
-      "aparato digestivo": "human digestive system anatomy diagram",
-      "aparato respiratorio": "human respiratory system diagram",
-      "celula": "cell structure biology diagram",
-      "célula": "cell structure biology diagram",
-      "volcan": "volcano cross section diagram",
-      "volcán": "volcano cross section diagram",
-      "mapa de mexico": "Mexico educational map",
-      "mapa de méxico": "Mexico educational map"
+      "partes de una planta": "parts of a plant",
+      "sistema solar": "solar system planets",
+      "aparato digestivo": "human digestive system",
+      "aparato respiratorio": "human respiratory system",
+      "celula": "cell structure",
+      "volcan": "volcano diagram",
+      "mapa de mexico": "Mexico map"
     };
 
-    const normalizar = (s) =>
-      s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-    let consulta = texto;
     const textoNormalizado = normalizar(texto);
+    let temaIngles = texto;
 
     for (const [clave, valor] of Object.entries(traducciones)) {
       if (textoNormalizado.includes(normalizar(clave))) {
-        consulta = valor;
+        temaIngles = valor;
         break;
       }
     }
 
-    const terminos = bn
-      ? [`${consulta} black and white drawing`, `${consulta} coloring page`, consulta]
-      : [`${consulta} educational illustration`, `${consulta} school diagram`, consulta];
-
-    const resultados = await Promise.allSettled(
-      terminos.map(async (termino) => {
-        const [wiki, openverse] = await Promise.allSettled([
-          buscarWikimedia(termino),
-          buscarOpenverse(termino)
-        ]);
-
-        return [
-          ...(wiki.status === "fulfilled" ? wiki.value : []),
-          ...(openverse.status === "fulfilled" ? openverse.value : [])
+    const consultas = bn
+      ? [
+          `${texto} dibujo para colorear primaria`,
+          `${temaIngles} coloring page kids`,
+          `${temaIngles} black white outline children`
+        ]
+      : [
+          `${texto} lámina didáctica primaria niños`,
+          `${temaIngles} educational illustration kids`,
+          `${temaIngles} elementary school diagram`
         ];
-      })
+
+    const respuestas = await Promise.allSettled(
+      consultas.flatMap((consulta) => [
+        buscarWikimedia(consulta),
+        buscarOpenverse(consulta)
+      ])
     );
 
-    const imagenes = [];
-    const urls = new Set();
+    let resultados = [];
 
-    for (const resultado of resultados) {
-      if (resultado.status !== "fulfilled") continue;
-
-      for (const imagen of resultado.value) {
-        if (!imagen.url || urls.has(imagen.url)) continue;
-        urls.add(imagen.url);
-        imagenes.push(imagen);
+    for (const respuesta of respuestas) {
+      if (respuesta.status === "fulfilled") {
+        resultados.push(...respuesta.value);
       }
     }
 
+    const palabrasTema = normalizar(`${texto} ${temaIngles}`)
+      .split(/[^a-z0-9]+/)
+      .filter((palabra) => palabra.length >= 4);
+
+    const palabrasExcluir = [
+      "book cover",
+      "magazine cover",
+      "portada",
+      "revista",
+      "newspaper",
+      "periodico",
+      "manuscript",
+      "document scan",
+      "libro escaneado",
+      "adult content"
+    ];
+
+    resultados = resultados
+      .map((imagen) => {
+        const contenido = normalizar(
+          `${imagen.title} ${imagen.description}`
+        );
+
+        if (
+          palabrasExcluir.some((palabra) =>
+            contenido.includes(normalizar(palabra))
+          )
+        ) {
+          return null;
+        }
+
+        let puntuacion = 0;
+
+        // Priorizar imágenes relacionadas directamente con el tema.
+        for (const palabra of palabrasTema) {
+          if (contenido.includes(palabra)) {
+            puntuacion += 3;
+          }
+        }
+
+        // Priorizar material infantil y escolar.
+        const terminosInfantiles = [
+          "kids",
+          "children",
+          "child",
+          "school",
+          "elementary",
+          "primary",
+          "educational",
+          "education",
+          "infantil",
+          "primaria",
+          "escolar",
+          "didactica",
+          "educativa",
+          "niños",
+          "dibujo",
+          "illustration",
+          "diagram"
+        ];
+
+        for (const termino of terminosInfantiles) {
+          if (contenido.includes(normalizar(termino))) {
+            puntuacion += 2;
+          }
+        }
+
+        if (bn) {
+          if (
+            contenido.includes("coloring") ||
+            contenido.includes("colorear") ||
+            contenido.includes("outline")
+          ) {
+            puntuacion += 5;
+          }
+        }
+
+        return { ...imagen, puntuacion };
+      })
+      .filter((imagen) => imagen && imagen.puntuacion > 0)
+      .sort((a, b) => b.puntuacion - a.puntuacion);
+
+    // Eliminar imágenes repetidas.
+    const urlsVistas = new Set();
+
+    const imagenes = resultados
+      .filter((imagen) => {
+        if (!imagen.url || urlsVistas.has(imagen.url)) {
+          return false;
+        }
+
+        urlsVistas.add(imagen.url);
+        return true;
+      })
+      .slice(0, 24);
+
     return res.status(200).json({
-      images: imagenes.map((img) => img.url),
-      results: imagenes,
+      images: imagenes.map((imagen) => imagen.url),
       imageUrl: imagenes[0]?.url || "",
       total: imagenes.length
     });
@@ -89,69 +180,70 @@ export default async function handler(req, res) {
   }
 }
 
-async function buscarWikimedia(termino) {
-  const params = new URLSearchParams({
+async function buscarWikimedia(consulta) {
+  const parametros = new URLSearchParams({
     action: "query",
     generator: "search",
-    gsrsearch: termino,
+    gsrsearch: consulta,
     gsrnamespace: "6",
-    gsrlimit: "15",
+    gsrlimit: "20",
     prop: "imageinfo",
     iiprop: "url|extmetadata",
-    iiurlwidth: "900",
-    format: "json",
-    origin: "*"
+    iiurlwidth: "800",
+    format: "json"
   });
 
-  const response = await fetch(
-    `https://commons.wikimedia.org/w/api.php?${params}`,
+  const respuesta = await fetch(
+    `https://commons.wikimedia.org/w/api.php?${parametros}`,
     {
-      headers: { "User-Agent": "EduNEM/1.0 (educational application)" }
+      headers: {
+        "User-Agent": "EduNEM/1.0 (aplicacion educativa)"
+      }
     }
   );
 
-  if (!response.ok) throw new Error("Wikimedia no disponible");
+  if (!respuesta.ok) {
+    throw new Error("Wikimedia no disponible");
+  }
 
-  const data = await response.json();
-  const pages = Object.values(data.query?.pages || {});
+  const datos = await respuesta.json();
+  const paginas = Object.values(datos.query?.pages || {});
 
-  return pages.map((page) => {
-    const info = page.imageinfo?.[0];
-    if (!info) return null;
+  return paginas.map((pagina) => {
+    const info = pagina.imageinfo?.[0];
 
     return {
-      url: info.thumburl || info.url,
-      original: info.url,
-      title: page.title.replace(/^File:/, ""),
-      source: "Wikimedia Commons",
-      license: info.extmetadata?.LicenseShortName?.value || "Consultar licencia",
-      attribution: info.extmetadata?.Artist?.value || ""
+      url: info?.thumburl || info?.url,
+      title: pagina.title.replace(/^File:/, ""),
+      description: info?.extmetadata?.ImageDescription?.value || "",
+      source: "Wikimedia Commons"
     };
-  }).filter((item) => item?.url);
+  }).filter((imagen) => imagen.url);
 }
 
-async function buscarOpenverse(termino) {
-  const params = new URLSearchParams({
-    q: termino,
-    page_size: "15",
+async function buscarOpenverse(consulta) {
+  const parametros = new URLSearchParams({
+    q: consulta,
+    category: "illustration",
+    page_size: "20",
     mature: "false"
   });
 
-  const response = await fetch(
-    `https://api.openverse.org/v1/images/?${params}`
+  const respuesta = await fetch(
+    `https://api.openverse.org/v1/images/?${parametros}`
   );
 
-  if (!response.ok) throw new Error("Openverse no disponible");
+  if (!respuesta.ok) {
+    throw new Error("Openverse no disponible");
+  }
 
-  const data = await response.json();
+  const datos = await respuesta.json();
 
-  return (data.results || []).map((item) => ({
+  return (datos.results || []).map((item) => ({
     url: item.thumbnail || item.url,
-    original: item.url,
-    title: item.title || "Ilustración educativa",
-    source: "Openverse",
-    license: item.license || "Consultar licencia",
-    attribution: item.attribution || ""
-  })).filter((item) => item.url);
+    title: item.title || "",
+    description: item.description || "",
+    source: "Openverse"
+  })).filter((imagen) => imagen.url);
 }
 
