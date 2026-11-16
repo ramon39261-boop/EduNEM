@@ -5,37 +5,77 @@ export default async function handler(req, res) {
 
   try {
     const { descripcion, estilo } = req.body || {};
-    const textoBusqueda = String(descripcion || "").trim();
-    const esBn = estilo === "bn";
+    const texto = String(descripcion || "").trim();
 
-    if (!textoBusqueda) {
+    if (!texto) {
       return res.status(400).json({ error: "Escribe un término de búsqueda" });
     }
 
-    // Convertimos la búsqueda del maestro en una consulta optimizada para ilustraciones educativas
-    const queryEnriquecida = encodeURIComponent(`${textoBusqueda} vector illustration coloring page black and white school`);
-    
-    // Usamos el servicio público de búsqueda e imágenes de Unsplash con la consulta exacta del usuario
-    let imageUrl = `https://source.unsplash.com/featured/800x600/?${encodeURIComponent(textoBusqueda + (esBn ? " coloring page outline" : " educational vector"))}`;
+    // Traducimos términos clave comunes de primaria para obtener mejores diagramas educativos
+    const diccionarioBusqueda = {
+      "ciclo del agua": "water cycle diagram",
+      "plato del bien comer": "plato del bien comer",
+      "partes de una planta": "plant anatomy diagram",
+      "sistema solar": "solar system planets diagram",
+      "aparato digestivo": "digestive system diagram",
+      "aparato respiratorio": "respiratory system diagram",
+      "célula": "cell structure diagram",
+      "volcán": "volcano cross section diagram"
+    };
 
-    // Respaldo dinámico ultra confiable basado en texto exacto mediante Picsum con semilla aleatoria por palabra
-    let seed = 0;
-    for (let i = 0; i < textoBusqueda.length; i++) {
-      seed += textoBusqueda.charCodeAt(i);
+    let queryFinal = texto;
+    const textoLower = texto.toLowerCase();
+    for (const [clave, traduccion] of Object.entries(diccionarioBusqueda)) {
+      if (textoLower.includes(clave)) {
+        queryFinal = traduccion;
+        break;
+      }
     }
 
-    imageUrl = `https://picsum.photos/seed/${seed}/800/600`;
-
-    // Si el usuario seleccionó Blanco y Negro, aplicamos el filtro de escala de grises y alto contraste idóneo para fotocopias escolares
-    if (esBn) {
-      imageUrl += "?grayscale&contrast=2";
+    // Si pide blanco y negro, añadimos términos de dibujo lineal / esquema
+    if (estilo === "bn") {
+      queryFinal += " line drawing outline diagram";
+    } else {
+      queryFinal += " illustration diagram";
     }
 
-    return res.status(200).json({ imageUrl });
+    // Consulta real a la API de búsqueda de imágenes de Wikimedia Commons
+    const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
+      `filetype:bitmap|drawing ${queryFinal}`
+    )}&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&origin=*`;
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        "User-Agent": "EduNEM-App/1.0 (Educational Platform)"
+      }
+    });
+
+    const data = await response.json();
+    const pages = data?.query?.pages || {};
+
+    // Extraemos las URLs de miniaturas renderizadas en PNG/JPG (evita errores de rutas SVG directas)
+    const imagenes = Object.values(pages)
+      .map((page) => {
+        const info = page.imageinfo?.[0];
+        return info?.thumburl || info?.url;
+      })
+      .filter(Boolean);
+
+    if (imagenes.length === 0) {
+      return res.status(200).json({
+        images: [],
+        imageUrl: ""
+      });
+    }
+
+    return res.status(200).json({
+      images: imagenes,
+      imageUrl: imagenes[0]
+    });
   } catch (error) {
-    return res.status(500).json({ 
-      error: "No se pudo obtener la imagen",
-      imageUrl: "https://upload.wikimedia.org/wikipedia/commons/3/3a/Open_book_01.svg" 
+    console.error("Error buscando ilustraciones:", error);
+    return res.status(500).json({
+      error: "Error al conectar con el buscador educativo"
     });
   }
 }
