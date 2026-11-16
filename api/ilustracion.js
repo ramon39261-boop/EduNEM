@@ -13,65 +13,75 @@ export default async function handler(req, res) {
 
     const esBn = estilo === "bn";
 
-    // Traducción rápida de temas frecuentes para maximizar resultados en Openverse
-    const equivalencias = {
-      "ciclo del agua": "water cycle diagram",
-      "plato del bien comer": "healthy food plate nutrition",
-      "partes de una planta": "plant parts anatomy diagram",
-      "sistema solar": "solar system planets",
-      "aparato digestivo": "digestive system diagram",
+    // Diccionario de términos clave en inglés para maximizar aciertos en buscadores globales abiertos
+    const traducciones = {
+      "ciclo del agua": "water cycle diagram school",
+      "plato del bien comer": "food nutrition plate diagram",
+      "partes de una planta": "plant anatomy school diagram",
+      "sistema solar": "solar system planets kids",
+      "aparato digestivo": "digestive system diagram school",
       "aparato respiratorio": "respiratory system diagram",
-      "célula": "cell biology diagram",
-      "volcán": "volcano diagram",
-      "mapa de mexico": "mexico map"
+      "célula": "cell structure biology diagram",
+      "volcán": "volcano cross section school",
+      "mapa de mexico": "mexico map educational"
     };
 
-    let query = texto;
-    const lower = texto.toLowerCase();
-    for (const [clave, valor] of Object.entries(equivalencias)) {
-      if (lower.includes(clave)) {
-        query = valor;
+    let queryFinal = texto.toLowerCase();
+    for (const [clave, valor] of Object.entries(traducciones)) {
+      if (queryFinal.includes(clave)) {
+        queryFinal = valor;
         break;
       }
     }
 
     if (esBn) {
-      query += " illustration outline";
+      queryFinal += " line art black and white outline";
+    } else {
+      queryFinal += " educational illustration vector";
     }
 
-    // Búsqueda instantánea en Openverse (sin API Key, respuesta en <1 segundo)
+    // Consulta en paralelo a Wikimedia Commons (enorme base de esquemas científicos/educativos)
+    const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
+      `filetype:bitmap|drawing ${queryFinal}`
+    )}&gsrnamespace=6&gsrlimit=6&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&origin=*`;
+
     const openverseUrl = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(
-      query
-    )}&category=illustration,digitized_artwork&page_size=8`;
+      queryFinal
+    )}&category=illustration,digitized_artwork&page_size=6`;
 
-    const response = await fetch(openverseUrl, {
-      headers: {
-        "User-Agent": "EduNEM-App/1.0"
-      }
-    });
+    const [wikiRes, openverseRes] = await Promise.all([
+      fetch(wikiUrl, { headers: { "User-Agent": "EduNEM-App/1.0" } }).catch(() => null),
+      fetch(openverseUrl, { headers: { "User-Agent": "EduNEM-App/1.0" } }).catch(() => null)
+    ]);
 
-    const data = await response.json();
-    const resultados = (data?.results || [])
-      .map((item) => item.thumbnail || item.url)
-      .filter(Boolean);
+    let imagenes = [];
 
-    // Enlaces externos preparados con el término exacto del docente
-    const queryExterna = esBn
-      ? `${texto} dibujo para colorear blanco y negro`
-      : `${texto} lamina educativa primaria`;
+    if (wikiRes && wikiRes.ok) {
+      const wikiData = await wikiRes.json();
+      const pages = wikiData?.query?.pages || {};
+      const wikiImgs = Object.values(pages)
+        .map((p) => p.imageinfo?.[0]?.thumburl || p.imageinfo?.[0]?.url)
+        .filter(Boolean);
+      imagenes.push(...wikiImgs);
+    }
 
-    const enlaces = {
-      google: `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(queryExterna)}`,
-      pinterest: `https://www.pinterest.com.mx/search/pins/?q=${encodeURIComponent(queryExterna)}`,
-      educima: `https://www.educima.com/dibujos-para-colorear-busqueda.php?q=${encodeURIComponent(texto)}`
-    };
+    if (openverseRes && openverseRes.ok) {
+      const openData = await openverseRes.json();
+      const openImgs = (openData?.results || [])
+        .map((item) => item.thumbnail || item.url)
+        .filter(Boolean);
+      imagenes.push(...openImgs);
+    }
+
+    // Eliminamos duplicados
+    imagenes = [...new Set(imagenes)];
 
     return res.status(200).json({
-      images: resultados,
-      enlaces
+      images: imagenes,
+      imageUrl: imagenes[0] || ""
     });
   } catch (error) {
-    console.error("Error en búsqueda visual:", error);
+    console.error("Error en buscador visual:", error);
     return res.status(500).json({
       error: "No se pudo conectar con el catálogo visual"
     });
