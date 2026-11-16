@@ -1,3 +1,4 @@
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Método no permitido" });
@@ -11,79 +12,146 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Escribe un tema educativo" });
     }
 
-    const esBn = estilo === "bn";
+    const bn = estilo === "bn";
 
-    // Diccionario de términos clave en inglés para maximizar aciertos en buscadores globales abiertos
     const traducciones = {
-      "ciclo del agua": "water cycle diagram school",
-      "plato del bien comer": "food nutrition plate diagram",
-      "partes de una planta": "plant anatomy school diagram",
-      "sistema solar": "solar system planets kids",
-      "aparato digestivo": "digestive system diagram school",
-      "aparato respiratorio": "respiratory system diagram",
+      "ciclo del agua": "water cycle diagram",
+      "plato del bien comer": "healthy eating plate food groups",
+      "partes de una planta": "plant parts anatomy diagram",
+      "sistema solar": "solar system planets educational diagram",
+      "aparato digestivo": "human digestive system anatomy diagram",
+      "aparato respiratorio": "human respiratory system diagram",
+      "celula": "cell structure biology diagram",
       "célula": "cell structure biology diagram",
-      "volcán": "volcano cross section school",
-      "mapa de mexico": "mexico map educational"
+      "volcan": "volcano cross section diagram",
+      "volcán": "volcano cross section diagram",
+      "mapa de mexico": "Mexico educational map",
+      "mapa de méxico": "Mexico educational map"
     };
 
-    let queryFinal = texto.toLowerCase();
+    const normalizar = (s) =>
+      s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    let consulta = texto;
+    const textoNormalizado = normalizar(texto);
+
     for (const [clave, valor] of Object.entries(traducciones)) {
-      if (queryFinal.includes(clave)) {
-        queryFinal = valor;
+      if (textoNormalizado.includes(normalizar(clave))) {
+        consulta = valor;
         break;
       }
     }
 
-    if (esBn) {
-      queryFinal += " line art black and white outline";
-    } else {
-      queryFinal += " educational illustration vector";
+    const terminos = bn
+      ? [`${consulta} black and white drawing`, `${consulta} coloring page`, consulta]
+      : [`${consulta} educational illustration`, `${consulta} school diagram`, consulta];
+
+    const resultados = await Promise.allSettled(
+      terminos.map(async (termino) => {
+        const [wiki, openverse] = await Promise.allSettled([
+          buscarWikimedia(termino),
+          buscarOpenverse(termino)
+        ]);
+
+        return [
+          ...(wiki.status === "fulfilled" ? wiki.value : []),
+          ...(openverse.status === "fulfilled" ? openverse.value : [])
+        ];
+      })
+    );
+
+    const imagenes = [];
+    const urls = new Set();
+
+    for (const resultado of resultados) {
+      if (resultado.status !== "fulfilled") continue;
+
+      for (const imagen of resultado.value) {
+        if (!imagen.url || urls.has(imagen.url)) continue;
+        urls.add(imagen.url);
+        imagenes.push(imagen);
+      }
     }
-
-    // Consulta en paralelo a Wikimedia Commons (enorme base de esquemas científicos/educativos)
-    const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
-      `filetype:bitmap|drawing ${queryFinal}`
-    )}&gsrnamespace=6&gsrlimit=6&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&origin=*`;
-
-    const openverseUrl = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(
-      queryFinal
-    )}&category=illustration,digitized_artwork&page_size=6`;
-
-    const [wikiRes, openverseRes] = await Promise.all([
-      fetch(wikiUrl, { headers: { "User-Agent": "EduNEM-App/1.0" } }).catch(() => null),
-      fetch(openverseUrl, { headers: { "User-Agent": "EduNEM-App/1.0" } }).catch(() => null)
-    ]);
-
-    let imagenes = [];
-
-    if (wikiRes && wikiRes.ok) {
-      const wikiData = await wikiRes.json();
-      const pages = wikiData?.query?.pages || {};
-      const wikiImgs = Object.values(pages)
-        .map((p) => p.imageinfo?.[0]?.thumburl || p.imageinfo?.[0]?.url)
-        .filter(Boolean);
-      imagenes.push(...wikiImgs);
-    }
-
-    if (openverseRes && openverseRes.ok) {
-      const openData = await openverseRes.json();
-      const openImgs = (openData?.results || [])
-        .map((item) => item.thumbnail || item.url)
-        .filter(Boolean);
-      imagenes.push(...openImgs);
-    }
-
-    // Eliminamos duplicados
-    imagenes = [...new Set(imagenes)];
 
     return res.status(200).json({
-      images: imagenes,
-      imageUrl: imagenes[0] || ""
+      images: imagenes.map((img) => img.url),
+      results: imagenes,
+      imageUrl: imagenes[0]?.url || "",
+      total: imagenes.length
     });
+
   } catch (error) {
     console.error("Error en buscador visual:", error);
+
     return res.status(500).json({
-      error: "No se pudo conectar con el catálogo visual"
+      error: "No se pudo conectar con los catálogos de imágenes"
     });
   }
 }
+
+async function buscarWikimedia(termino) {
+  const params = new URLSearchParams({
+    action: "query",
+    generator: "search",
+    gsrsearch: termino,
+    gsrnamespace: "6",
+    gsrlimit: "15",
+    prop: "imageinfo",
+    iiprop: "url|extmetadata",
+    iiurlwidth: "900",
+    format: "json",
+    origin: "*"
+  });
+
+  const response = await fetch(
+    `https://commons.wikimedia.org/w/api.php?${params}`,
+    {
+      headers: { "User-Agent": "EduNEM/1.0 (educational application)" }
+    }
+  );
+
+  if (!response.ok) throw new Error("Wikimedia no disponible");
+
+  const data = await response.json();
+  const pages = Object.values(data.query?.pages || {});
+
+  return pages.map((page) => {
+    const info = page.imageinfo?.[0];
+    if (!info) return null;
+
+    return {
+      url: info.thumburl || info.url,
+      original: info.url,
+      title: page.title.replace(/^File:/, ""),
+      source: "Wikimedia Commons",
+      license: info.extmetadata?.LicenseShortName?.value || "Consultar licencia",
+      attribution: info.extmetadata?.Artist?.value || ""
+    };
+  }).filter((item) => item?.url);
+}
+
+async function buscarOpenverse(termino) {
+  const params = new URLSearchParams({
+    q: termino,
+    page_size: "15",
+    mature: "false"
+  });
+
+  const response = await fetch(
+    `https://api.openverse.org/v1/images/?${params}`
+  );
+
+  if (!response.ok) throw new Error("Openverse no disponible");
+
+  const data = await response.json();
+
+  return (data.results || []).map((item) => ({
+    url: item.thumbnail || item.url,
+    original: item.url,
+    title: item.title || "Ilustración educativa",
+    source: "Openverse",
+    license: item.license || "Consultar licencia",
+    attribution: item.attribution || ""
+  })).filter((item) => item.url);
+}
+
