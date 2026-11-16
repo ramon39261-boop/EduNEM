@@ -1304,6 +1304,7 @@ function ProyectoView() {
   );
 }
 
+
 function IlustracionView() {
   const [descripcion, setDescripcion] = useState('');
   const [estilo, setEstilo] = useState<'color' | 'bn'>('color');
@@ -1330,7 +1331,10 @@ function IlustracionView() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Error al buscar recurso.');
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al buscar recursos.');
+      }
 
       setEnlaces(data.enlaces || null);
 
@@ -1338,22 +1342,31 @@ function IlustracionView() {
         setImagenes(data.images);
         setSeleccionada(data.images[0]);
       } else {
-        setError('No hubo coincidencia directa en el visor rápido. Usa los botones de Google Imágenes o Pinterest de abajo para ver cientos de fichas.');
+        setError(
+          'No encontramos láminas adecuadas para este tema. Prueba con otro nombre o consulta los bancos educativos.'
+        );
       }
     } catch (err: any) {
-      setError(err.message || 'Error desconocido');
+      setError(err.message || 'No se pudo realizar la búsqueda.');
     } finally {
       setLoading(false);
     }
   };
 
-  const queryDirecta = estilo === 'bn'
-    ? `${descripcion || 'ciclo del agua'} dibujo para colorear blanco y negro`
-    : `${descripcion || 'ciclo del agua'} lamina educativa primaria`;
+  const temaPrimaria = descripcion.trim() || 'ciclo del agua';
 
-  const urlGoogleDirecta = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(queryDirecta)}`;
-  const urlPinterestDirecta = `https://www.pinterest.com.mx/search/pins/?q=${encodeURIComponent(queryDirecta)}`;
-  const urlEducimaDirecta = `https://www.educima.com/dibujos-para-colorear-busqueda.php?q=${encodeURIComponent(descripcion || 'agua')}`;
+  const queryDirecta = estilo === 'bn'
+    ? `${temaPrimaria} dibujo infantil para colorear primaria niños`
+    : `${temaPrimaria} lámina didáctica ilustrada para niños de primaria`;
+
+  const urlGoogleDirecta =
+    `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(queryDirecta)}`;
+
+  const urlPinterestDirecta =
+    `https://www.pinterest.com.mx/search/pins/?q=${encodeURIComponent(queryDirecta)}`;
+
+  const urlEducimaDirecta =
+    `https://www.educima.com/dibujos-para-colorear-busqueda.php?q=${encodeURIComponent(temaPrimaria)}`;
 
   return (
     <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-6">
@@ -1362,16 +1375,21 @@ function IlustracionView() {
           <span className="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">Recursos Visuales</span>
           <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mt-0.5">Buscador de Láminas Educativas</h2>
         </div>
-        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">Resultados instantáneos y enlaces a fichas escolares</p>
+        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">
+          Material didáctico para niñas y niños de primaria
+        </p>
       </motion.header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
         <motion.div variants={staggerItem} className="lg:col-span-5 glass-card p-6 space-y-6">
           <form onSubmit={handleBuscar} className="space-y-4">
-            <h2 className="text-sm font-bold text-slate-800 dark:text-white">1. Describe el Recurso Visual Didáctico</h2>
+            <h2 className="text-sm font-bold text-slate-800 dark:text-white">
+              1. ¿Qué tema de primaria necesitas?
+            </h2>
+
             <textarea
               className="w-full p-4 border border-slate-200 dark:border-emerald-900/60 rounded-2xl bg-white dark:bg-nem-dark focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-700 dark:text-slate-200 h-24 resize-none text-sm"
-              placeholder="Ej. Partes de una planta, ciclo del agua, sistema solar..."
+              placeholder="Ej. Ciclo del agua explicado para niños de primaria..."
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
             />
@@ -1381,6 +1399,7 @@ function IlustracionView() {
                 <Palette size={14} />
                 <span>Estilo de visualización / impresión:</span>
               </label>
+
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -1394,6 +1413,7 @@ function IlustracionView() {
                 >
                   🎨 A Color
                 </button>
+
                 <button
                   type="button"
                   onClick={() => setEstilo('bn')}
@@ -1410,7 +1430,10 @@ function IlustracionView() {
             </div>
 
             <div>
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Ideas rápidas:</span>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+                Ideas para primaria:
+              </span>
+
               <div className="flex flex-wrap gap-2">
                 {EJEMPLOS_ILUSTRACION.map((idea, index) => (
                   <button
@@ -1425,7 +1448,11 @@ function IlustracionView() {
               </div>
             </div>
 
-            {error && <div className="p-3 bg-amber-50 text-amber-800 border border-amber-200 text-xs rounded-xl">{error}</div>}
+            {error && (
+              <div className="p-3 bg-amber-50 text-amber-800 border border-amber-200 text-xs rounded-xl">
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"
@@ -1440,15 +1467,16 @@ function IlustracionView() {
               ) : (
                 <>
                   <ImageIcon className="w-5 h-5" />
-                  <span>Buscar Láminas al Instante</span>
+                  <span>Buscar Láminas de Primaria</span>
                 </>
               )}
             </button>
 
             <div className="pt-3 border-t border-slate-100 dark:border-emerald-900/40 space-y-2">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                Abrir búsqueda completa en bancos educativos:
+                Más recursos educativos:
               </span>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <a
                   href={enlaces?.google || urlGoogleDirecta}
@@ -1458,6 +1486,7 @@ function IlustracionView() {
                 >
                   <span>🔍 Google Imágenes</span>
                 </a>
+
                 <a
                   href={enlaces?.pinterest || urlPinterestDirecta}
                   target="_blank"
@@ -1466,13 +1495,14 @@ function IlustracionView() {
                 >
                   <span>📌 Pinterest</span>
                 </a>
+
                 <a
                   href={enlaces?.educima || urlEducimaDirecta}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="py-2.5 px-2.5 rounded-xl border border-slate-200 dark:border-emerald-900/60 bg-white dark:bg-nem-dark hover:bg-emerald-50 text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center justify-center gap-1 transition-colors text-center"
                 >
-                  <span>🖍️ Dibujos Colorear</span>
+                  <span>🖍️ Dibujos para colorear</span>
                 </a>
               </div>
             </div>
@@ -1486,6 +1516,7 @@ function IlustracionView() {
                 <span className="text-xs font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/15 px-3 py-1 rounded-full border">
                   Vista previa ({estilo === 'bn' ? 'Blanco y Negro para imprimir' : 'A Color'})
                 </span>
+
                 <a
                   href={seleccionada}
                   target="_blank"
@@ -1513,6 +1544,7 @@ function IlustracionView() {
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                     Selecciona otra lámina encontrada ({imagenes.length}):
                   </span>
+
                   <div className="grid grid-cols-4 gap-2.5">
                     {imagenes.map((imgUrl, idx) => (
                       <button
@@ -1528,7 +1560,8 @@ function IlustracionView() {
                       >
                         <img
                           src={imgUrl}
-                          alt={`Opción ${idx + 1}`}
+                          alt={`Lámina de primaria ${idx + 1}`}
+                          loading="lazy"
                           className={cn(
                             "max-h-full max-w-full object-contain",
                             estilo === 'bn' && "grayscale contrast-150"
@@ -1545,9 +1578,14 @@ function IlustracionView() {
               <div className="w-16 h-16 bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
                 <ImageIcon size={30} />
               </div>
-              <h3 className="text-base font-semibold text-slate-700 dark:text-white">Lienzo Educativo EduNEM</h3>
+
+              <h3 className="text-base font-semibold text-slate-700 dark:text-white">
+                Lienzo Educativo EduNEM
+              </h3>
+
               <p className="text-sm text-slate-400 max-w-sm mx-auto leading-relaxed">
-                Busca al instante ilustraciones reales sin esperas o abre directamente las fichas en <strong>Google Imágenes</strong>, <strong>Pinterest</strong> o <strong>Educima</strong>.
+                Encuentra láminas, esquemas y dibujos didácticos para niñas y niños de primaria.
+                También puedes consultar Google Imágenes, Pinterest y Educima.
               </p>
             </div>
           )}
