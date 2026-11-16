@@ -8,74 +8,72 @@ export default async function handler(req, res) {
     const texto = String(descripcion || "").trim();
 
     if (!texto) {
-      return res.status(400).json({ error: "Escribe un término de búsqueda" });
+      return res.status(400).json({ error: "Escribe un tema educativo" });
     }
 
-    // Traducimos términos clave comunes de primaria para obtener mejores diagramas educativos
-    const diccionarioBusqueda = {
+    const esBn = estilo === "bn";
+
+    // Traducción rápida de temas frecuentes para maximizar resultados en Openverse
+    const equivalencias = {
       "ciclo del agua": "water cycle diagram",
-      "plato del bien comer": "plato del bien comer",
-      "partes de una planta": "plant anatomy diagram",
-      "sistema solar": "solar system planets diagram",
+      "plato del bien comer": "healthy food plate nutrition",
+      "partes de una planta": "plant parts anatomy diagram",
+      "sistema solar": "solar system planets",
       "aparato digestivo": "digestive system diagram",
       "aparato respiratorio": "respiratory system diagram",
-      "célula": "cell structure diagram",
-      "volcán": "volcano cross section diagram"
+      "célula": "cell biology diagram",
+      "volcán": "volcano diagram",
+      "mapa de mexico": "mexico map"
     };
 
-    let queryFinal = texto;
-    const textoLower = texto.toLowerCase();
-    for (const [clave, traduccion] of Object.entries(diccionarioBusqueda)) {
-      if (textoLower.includes(clave)) {
-        queryFinal = traduccion;
+    let query = texto;
+    const lower = texto.toLowerCase();
+    for (const [clave, valor] of Object.entries(equivalencias)) {
+      if (lower.includes(clave)) {
+        query = valor;
         break;
       }
     }
 
-    // Si pide blanco y negro, añadimos términos de dibujo lineal / esquema
-    if (estilo === "bn") {
-      queryFinal += " line drawing outline diagram";
-    } else {
-      queryFinal += " illustration diagram";
+    if (esBn) {
+      query += " illustration outline";
     }
 
-    // Consulta real a la API de búsqueda de imágenes de Wikimedia Commons
-    const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
-      `filetype:bitmap|drawing ${queryFinal}`
-    )}&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&origin=*`;
+    // Búsqueda instantánea en Openverse (sin API Key, respuesta en <1 segundo)
+    const openverseUrl = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(
+      query
+    )}&category=illustration,digitized_artwork&page_size=8`;
 
-    const response = await fetch(apiUrl, {
+    const response = await fetch(openverseUrl, {
       headers: {
-        "User-Agent": "EduNEM-App/1.0 (Educational Platform)"
+        "User-Agent": "EduNEM-App/1.0"
       }
     });
 
     const data = await response.json();
-    const pages = data?.query?.pages || {};
-
-    // Extraemos las URLs de miniaturas renderizadas en PNG/JPG (evita errores de rutas SVG directas)
-    const imagenes = Object.values(pages)
-      .map((page) => {
-        const info = page.imageinfo?.[0];
-        return info?.thumburl || info?.url;
-      })
+    const resultados = (data?.results || [])
+      .map((item) => item.thumbnail || item.url)
       .filter(Boolean);
 
-    if (imagenes.length === 0) {
-      return res.status(200).json({
-        images: [],
-        imageUrl: ""
-      });
-    }
+    // Enlaces externos preparados con el término exacto del docente
+    const queryExterna = esBn
+      ? `${texto} dibujo para colorear blanco y negro`
+      : `${texto} lamina educativa primaria`;
+
+    const enlaces = {
+      google: `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(queryExterna)}`,
+      pinterest: `https://www.pinterest.com.mx/search/pins/?q=${encodeURIComponent(queryExterna)}`,
+      educima: `https://www.educima.com/dibujos-para-colorear-busqueda.php?q=${encodeURIComponent(texto)}`
+    };
 
     return res.status(200).json({
-      images: imagenes,
-      imageUrl: imagenes[0]
+      images: resultados,
+      enlaces
     });
   } catch (error) {
-    console.error("Error buscando ilustraciones:", error);
+    console.error("Error en búsqueda visual:", error);
     return res.status(500).json({
-      error: "Error al conectar con el buscador educativo"
+      error: "No se pudo conectar con el catálogo visual"
     });
   }
 }
