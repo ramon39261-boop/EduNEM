@@ -1,3 +1,4 @@
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
@@ -26,26 +27,51 @@ export default async function handler(req, res) {
       });
     }
 
+    if (texto.length > 1500) {
+      return res.status(400).json({
+        error: "El tema es demasiado largo"
+      });
+    }
+
     const esBn = estilo === "bn";
 
     const prompt = `
-Create a high-quality educational illustration for Mexican elementary school children.
+Create ONE clear educational illustration for Mexican elementary school students, ages 6 to 12.
 
-Subject: ${texto}
+MAIN SUBJECT:
+${texto}
 
-Style:
-- Friendly and attractive children's educational illustration.
-- Clear shapes and recognizable objects.
-- Simple composition, centered subject.
-- Appropriate for elementary school students.
+EDUCATIONAL REQUIREMENTS:
+- Represent the requested subject accurately.
+- Focus only on the main educational topic.
+- Show recognizable objects and correct visual details.
+- Use a simple, organized composition.
+- Make the illustration easy for primary school children to understand.
+- Use a friendly children's textbook illustration style.
+- Avoid unrelated objects, decorative clutter and confusing details.
+
+IMPORTANT TEXT RULES:
+- Do not include words.
+- Do not include letters.
+- Do not include numbers.
+- Do not include captions, labels, titles or written explanations.
+- Do not create pseudo-text or random symbols.
+
+IMAGE QUALITY:
+- One main scene.
+- Clear shapes and well-defined elements.
+- Balanced composition.
 - Clean background.
-- No watermark.
-- No signatures.
-- No frightening or inappropriate content.
+- High-quality educational illustration.
+- No watermark or signature.
+
+SAFETY:
+- Appropriate for children ages 6 to 12.
+- No violence, frightening imagery or inappropriate content.
 
 ${esBn
-  ? "Black and white coloring book illustration, clean bold outlines, white background, no gray shades, no colors."
-  : "Bright harmonious colors, colorful children's textbook illustration."}
+  ? "BLACK AND WHITE COLORING PAGE. White background, clean bold black outlines, simple shapes, no colors, no gray shades, no shadows."
+  : "FULL COLOR EDUCATIONAL ILLUSTRATION. Bright harmonious colors, attractive and clear, suitable for a Mexican elementary school textbook."}
 `;
 
     const endpoint =
@@ -70,7 +96,6 @@ ${esBn
       })
     });
 
-    // Leer la respuesta sin asumir que siempre será JSON.
     const rawResponse = await response.text();
 
     let result;
@@ -83,7 +108,6 @@ ${esBn
       };
     }
 
-    // Mostrar el error real de NVIDIA.
     if (!response.ok) {
       console.error("Error NVIDIA FLUX:", result);
 
@@ -102,7 +126,6 @@ ${esBn
       });
     }
 
-    // Obtener la imagen de los formatos de respuesta habituales.
     const base64 =
       result?.data?.[0]?.artifacts?.[0]?.base64 ||
       result?.artifacts?.[0]?.base64 ||
@@ -135,6 +158,7 @@ ${esBn
     });
   }
 }
+
 
 
 
