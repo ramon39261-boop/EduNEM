@@ -33,45 +33,85 @@ export default async function handler(req, res) {
       });
     }
 
-    const esBn = estilo === "bn";
+    const esBn =
+      String(estilo || "").trim().toLowerCase() === "bn";
+
+    const instruccionesBn = `
+Create a REAL BLACK AND WHITE COLORING BOOK PAGE for elementary school children.
+
+STRICT COLORING PAGE REQUIREMENTS:
+- Pure white background.
+- Black ink outlines only.
+- Thick, smooth, clean black contour lines.
+- Large enclosed areas that children can color with crayons.
+- Simple shapes with clearly defined boundaries.
+- Minimal details, suitable for children ages 6 to 12.
+- Every object must be drawn using black outlines.
+- Keep the inside of all shapes completely white and empty.
+- Use consistent outline thickness.
+- Printable coloring worksheet appearance.
+
+ABSOLUTELY FORBIDDEN:
+- No colors whatsoever.
+- No gray.
+- No grayscale.
+- No gradients.
+- No shadows.
+- No lighting effects.
+- No textures.
+- No pencil shading.
+- No crosshatching.
+- No filled black areas except small necessary outline details.
+- No photographic appearance.
+- No colored illustration converted to grayscale.
+
+The result must look like a traditional children's coloring book page, ready to print and color.
+`;
+
+    const instruccionesColor = `
+FULL COLOR EDUCATIONAL ILLUSTRATION:
+- Bright, harmonious and attractive colors.
+- Friendly children's textbook illustration style.
+- Clear and recognizable objects.
+- Beautiful but simple educational composition.
+- Soft, clean visual appearance.
+- Appropriate for Mexican elementary school students ages 6 to 12.
+`;
 
     const prompt = `
-Create ONE clear educational illustration for Mexican elementary school students, ages 6 to 12.
+Create ONE educational illustration for Mexican elementary school students, ages 6 to 12.
 
-MAIN SUBJECT:
+MAIN EDUCATIONAL SUBJECT:
 ${texto}
 
-EDUCATIONAL REQUIREMENTS:
-- Represent the requested subject accurately.
-- Focus only on the main educational topic.
-- Show recognizable objects and correct visual details.
-- Use a simple, organized composition.
+EDUCATIONAL ACCURACY:
+- Represent the subject correctly.
+- Show the most important elements clearly.
+- Use recognizable shapes and objects.
 - Make the illustration easy for primary school children to understand.
-- Use a friendly children's textbook illustration style.
-- Avoid unrelated objects, decorative clutter and confusing details.
+- Avoid confusing or unrelated details.
 
-IMPORTANT TEXT RULES:
-- Do not include words.
-- Do not include letters.
-- Do not include numbers.
-- Do not include captions, labels, titles or written explanations.
-- Do not create pseudo-text or random symbols.
-
-IMAGE QUALITY:
-- One main scene.
-- Clear shapes and well-defined elements.
-- Balanced composition.
-- Clean background.
-- High-quality educational illustration.
+COMPOSITION:
+- One main educational scene.
+- Balanced and organized composition.
+- Clean, uncluttered background.
+- Centered subject.
 - No watermark or signature.
 
-SAFETY:
-- Appropriate for children ages 6 to 12.
-- No violence, frightening imagery or inappropriate content.
+TEXT RESTRICTIONS:
+- No words.
+- No letters.
+- No numbers.
+- No captions.
+- No labels.
+- No titles.
+- No random symbols.
 
-${esBn
-  ? "BLACK AND WHITE COLORING PAGE. White background, clean bold black outlines, simple shapes, no colors, no gray shades, no shadows."
-  : "FULL COLOR EDUCATIONAL ILLUSTRATION. Bright harmonious colors, attractive and clear, suitable for a Mexican elementary school textbook."}
+CHILD SAFETY:
+- Friendly and appropriate for children ages 6 to 12.
+- No violence or frightening imagery.
+
+${esBn ? instruccionesBn : instruccionesColor}
 `;
 
     const endpoint =
@@ -85,7 +125,7 @@ ${esBn
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        prompt: prompt,
+        prompt,
         height: 1024,
         width: 1024,
         cfg_scale: 0,
@@ -145,9 +185,10 @@ ${esBn
     return res.status(200).json({
       success: true,
       image: imageUrl,
-      imageUrl: imageUrl,
+      imageUrl,
       imageBase64: base64,
-      images: [imageUrl]
+      images: [imageUrl],
+      estilo: esBn ? "bn" : "color"
     });
 
   } catch (error) {
@@ -158,6 +199,7 @@ ${esBn
     });
   }
 }
+
 
 
 
