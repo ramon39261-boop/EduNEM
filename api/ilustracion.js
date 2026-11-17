@@ -61,17 +61,15 @@ ${esBn
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        prompt: prompt,
-        height: 1024,
-        width: 1024,
-        cfg_scale: 0,
-        mode: "base",
-        image: null,
-        samples: 1,
-        seed: 0,
-        steps: 4
-      })
-    });
+  prompt: prompt,
+  height: 1024,
+  width: 1024,
+  cfg_scale: 0,
+  mode: "base",
+  image: null,
+  samples: 1,
+  steps: 4
+})
 
     const result = await response.json();
 
