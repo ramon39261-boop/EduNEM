@@ -3,72 +3,87 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Método no permitido" });
   }
 
-  const apiKey = process.env.NVIDIA_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: "Falta configurar NVIDIA_API_KEY en Vercel." });
-  }
-
   try {
     const { descripcion, estilo } = req.body || {};
     const texto = String(descripcion || "").trim();
 
     if (!texto) {
-      return res.status(400).json({ error: "Escribe el tema de la lámina educativa." });
+      return res.status(400).json({ error: "Escribe un tema educativo" });
     }
 
     const esBn = estilo === "bn";
 
-    // Prompt directo optimizado para velocidad y precisión didáctica
-    const promptVisual = esBn
-      ? `Coloring book line art for primary school: ${texto}, pure white background, clean thick black outlines, no shading, easy to print.`
-      : `Bright colorful educational school poster illustration: ${texto}, flat clean vector art for kids, white background.`;
+    // Diccionario de términos clave en inglés para maximizar aciertos en buscadores globales abiertos
+    const traducciones = {
+      "ciclo del agua": "water cycle diagram school",
+      "plato del bien comer": "food nutrition plate diagram",
+      "partes de una planta": "plant anatomy school diagram",
+      "sistema solar": "solar system planets kids",
+      "aparato digestivo": "digestive system diagram school",
+      "aparato respiratorio": "respiratory system diagram",
+      "célula": "cell structure biology diagram",
+      "volcán": "volcano cross section school",
+      "mapa de mexico": "mexico map educational"
+    };
 
-    // Generación ultra rápida con FLUX.1-schnell (2 pasos para evitar timeout en Vercel)
-    const imgRes = await fetch("https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-schnell", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
-      body: JSON.stringify({
-        prompt: promptVisual,
-        width: 1024,
-        height: 768,
-        seed: Math.floor(Math.random() * 100000),
-        steps: 2, // Reducido a 2 pasos para respuesta inmediata (<2 segundos)
-      }),
-    });
-
-    if (!imgRes.ok) {
-      const errText = await imgRes.text();
-      throw new Error(`Error en NVIDIA NIM Imagen (${imgRes.status}): ${errText}`);
+    let queryFinal = texto.toLowerCase();
+    for (const [clave, valor] of Object.entries(traducciones)) {
+      if (queryFinal.includes(clave)) {
+        queryFinal = valor;
+        break;
+      }
     }
 
-    const imgData = await imgRes.json();
-    
-    // Validamos ambos formatos posibles que devuelve NVIDIA (base64 o url)
-    const base64Img = imgData.artifacts?.[0]?.base64;
-    const urlImg = imgData.artifacts?.[0]?.url || imgData.url;
-
-    let dataUrl = "";
-    if (base64Img) {
-      dataUrl = `data:image/jpeg;base64,${base64Img}`;
-    } else if (urlImg) {
-      dataUrl = urlImg;
+    if (esBn) {
+      queryFinal += " line art black and white outline";
     } else {
-      throw new Error("NVIDIA NIM no devolvió una imagen válida.");
+      queryFinal += " educational illustration vector";
     }
+
+    // Consulta en paralelo a Wikimedia Commons (enorme base de esquemas científicos/educativos)
+    const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
+      `filetype:bitmap|drawing ${queryFinal}`
+    )}&gsrnamespace=6&gsrlimit=6&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&origin=*`;
+
+    const openverseUrl = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(
+      queryFinal
+    )}&category=illustration,digitized_artwork&page_size=6`;
+
+    const [wikiRes, openverseRes] = await Promise.all([
+      fetch(wikiUrl, { headers: { "User-Agent": "EduNEM-App/1.0" } }).catch(() => null),
+      fetch(openverseUrl, { headers: { "User-Agent": "EduNEM-App/1.0" } }).catch(() => null)
+    ]);
+
+    let imagenes = [];
+
+    if (wikiRes && wikiRes.ok) {
+      const wikiData = await wikiRes.json();
+      const pages = wikiData?.query?.pages || {};
+      const wikiImgs = Object.values(pages)
+        .map((p) => p.imageinfo?.[0]?.thumburl || p.imageinfo?.[0]?.url)
+        .filter(Boolean);
+      imagenes.push(...wikiImgs);
+    }
+
+    if (openverseRes && openverseRes.ok) {
+      const openData = await openverseRes.json();
+      const openImgs = (openData?.results || [])
+        .map((item) => item.thumbnail || item.url)
+        .filter(Boolean);
+      imagenes.push(...openImgs);
+    }
+
+    // Eliminamos duplicados
+    imagenes = [...new Set(imagenes)];
 
     return res.status(200).json({
-      images: [dataUrl],
-      imageUrl: dataUrl,
+      images: imagenes,
+      imageUrl: imagenes[0] || ""
     });
-
   } catch (error) {
-    console.error("EduNEM Ilustración API:", error);
+    console.error("Error en buscador visual:", error);
     return res.status(500).json({
-      error: error.message || "Error al generar la lámina educativa.",
+      error: "No se pudo conectar con el catálogo visual"
     });
   }
 }
