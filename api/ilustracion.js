@@ -76,17 +76,17 @@ ${esBn
     const result = await response.json();
 
     if (!response.ok) {
-      console.error("Error NVIDIA FLUX:", result);
+  console.error("Error NVIDIA FLUX:", result);
 
-      return res.status(response.status).json({
-        error:
-          result?.detail ||
-          result?.message ||
-          result?.title ||
-          "NVIDIA no pudo generar la ilustración",
-        details: result
-      });
-    }
+  const mensaje = result?.detail || result?.message || result?.title;
+
+  return res.status(response.status).json({
+    error: typeof mensaje === "string"
+      ? mensaje
+      : JSON.stringify(mensaje || result),
+    details: result
+  });
+}
 
     const base64 =
       result?.data?.[0]?.artifacts?.[0]?.base64 ||
