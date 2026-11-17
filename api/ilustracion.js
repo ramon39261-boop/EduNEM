@@ -18,41 +18,12 @@ export default async function handler(req, res) {
 
     const esBn = estilo === "bn";
 
-    // Paso 1: Usamos el modelo de texto de NVIDIA para optimizar el prompt visual en inglés
-    const modelText = process.env.NVIDIA_MODEL || "nvidia/nemotron-3.5-lightning-30b-a3b";
-    
-    const textRes = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: modelText,
-        messages: [
-          { 
-            role: "system", 
-            content: "You are an educational illustrator prompt engineer for Mexican primary schools. Translate the user's topic into a clear, descriptive English image generation prompt (max 40 words). Output ONLY the prompt text, with no quotes or explanations." 
-          },
-          { 
-            role: "user", 
-            content: esBn 
-              ? `Topic: ${texto}. Style: black and white coloring book line art for primary school kids, pure white background, clean outlines, no shading.`
-              : `Topic: ${texto}. Style: bright colorful educational school poster illustration, flat clean vector art for kids, white background.`
-          },
-        ],
-        temperature: 0.3,
-        max_tokens: 100,
-      }),
-    });
+    // Prompt directo optimizado para velocidad y precisión didáctica
+    const promptVisual = esBn
+      ? `Coloring book line art for primary school: ${texto}, pure white background, clean thick black outlines, no shading, easy to print.`
+      : `Bright colorful educational school poster illustration: ${texto}, flat clean vector art for kids, white background.`;
 
-    const textPayload = await textRes.json().catch(() => ({}));
-    let promptVisual = texto;
-    if (textRes.ok) {
-      promptVisual = textPayload?.choices?.[0]?.message?.content?.trim() || texto;
-    }
-
-    // Paso 2: Generamos la imagen con FLUX.1-schnell de NVIDIA NIM
+    // Generación ultra rápida con FLUX.1-schnell (2 pasos para evitar timeout en Vercel)
     const imgRes = await fetch("https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-schnell", {
       method: "POST",
       headers: {
@@ -65,23 +36,29 @@ export default async function handler(req, res) {
         width: 1024,
         height: 768,
         seed: Math.floor(Math.random() * 100000),
-        steps: 4,
+        steps: 2, // Reducido a 2 pasos para respuesta inmediata (<2 segundos)
       }),
     });
 
     if (!imgRes.ok) {
       const errText = await imgRes.text();
-      throw new Error(`Error en NVIDIA NIM Imagen: ${imgRes.status} - ${errText}`);
+      throw new Error(`Error en NVIDIA NIM Imagen (${imgRes.status}): ${errText}`);
     }
 
     const imgData = await imgRes.json();
+    
+    // Validamos ambos formatos posibles que devuelve NVIDIA (base64 o url)
     const base64Img = imgData.artifacts?.[0]?.base64;
+    const urlImg = imgData.artifacts?.[0]?.url || imgData.url;
 
-    if (!base64Img) {
-      throw new Error("NVIDIA NIM no devolvió datos de imagen válidos.");
+    let dataUrl = "";
+    if (base64Img) {
+      dataUrl = `data:image/jpeg;base64,${base64Img}`;
+    } else if (urlImg) {
+      dataUrl = urlImg;
+    } else {
+      throw new Error("NVIDIA NIM no devolvió una imagen válida.");
     }
-
-    const dataUrl = `data:image/jpeg;base64,${base64Img}`;
 
     return res.status(200).json({
       images: [dataUrl],
@@ -90,7 +67,7 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error("EduNEM Ilustración API:", error);
-    return res.status(error.status || 500).json({
+    return res.status(500).json({
       error: error.message || "Error al generar la lámina educativa.",
     });
   }
