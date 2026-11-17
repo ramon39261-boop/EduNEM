@@ -1304,6 +1304,7 @@ function ProyectoView() {
   );
 }
 
+
 function IlustracionView() {
   const [descripcion, setDescripcion] = useState('');
   const [estilo, setEstilo] = useState<'color' | 'bn'>('color');
@@ -1314,7 +1315,7 @@ function IlustracionView() {
 
   const handleBuscar = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!descripcion.trim()) return;
+    if (!descripcion.trim() || loading) return;
 
     setLoading(true);
     setError('');
@@ -1329,38 +1330,62 @@ function IlustracionView() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Error al buscar recurso.');
 
-      if (data.images && data.images.length > 0) {
+      if (!response.ok) {
+        throw new Error(data.error || 'No se pudo generar la ilustración.');
+      }
+
+      if (data.images?.length > 0) {
         setImagenes(data.images);
         setSeleccionada(data.images[0]);
       } else {
-        setError('No se encontraron láminas exactas. Prueba con términos más generales (ej. "ciclo del agua", "partes de la planta").');
+        throw new Error('NVIDIA no devolvió ninguna imagen.');
       }
+
     } catch (err: any) {
-      setError(err.message || 'Error desconocido');
+      setError(err.message || 'Error al generar la ilustración.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-6">
-      <motion.header variants={staggerItem} className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-emerald-900/40">
+    <motion.div
+      variants={staggerContainer}
+      initial="hidden"
+      animate="show"
+      className="space-y-6"
+    >
+      <motion.header
+        variants={staggerItem}
+        className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-emerald-900/40"
+      >
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">Recursos Visuales</span>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mt-0.5">Buscador de Láminas Educativas</h2>
+          <span className="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+            Recursos Visuales con IA
+          </span>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mt-0.5">
+            Ilustraciones Educativas
+          </h2>
         </div>
-        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">Selección múltiple de esquemas y diagramas didácticos</p>
+        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">
+          Imágenes para niñas y niños de primaria
+        </p>
       </motion.header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
-        <motion.div variants={staggerItem} className="lg:col-span-5 glass-card p-6 space-y-6">
+        <motion.div
+          variants={staggerItem}
+          className="lg:col-span-5 glass-card p-6 space-y-6"
+        >
           <form onSubmit={handleBuscar} className="space-y-4">
-            <h2 className="text-sm font-bold text-slate-800 dark:text-white">1. Describe el Recurso Visual Didáctico</h2>
+            <h2 className="text-sm font-bold text-slate-800 dark:text-white">
+              Describe la ilustración que necesitas
+            </h2>
+
             <textarea
-              className="w-full p-4 border border-slate-200 dark:border-emerald-900/60 rounded-2xl bg-white dark:bg-nem-dark focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-700 dark:text-slate-200 h-28 resize-none text-sm"
-              placeholder="Ej. Partes de una planta con raíz, tallo, hojas y flor..."
+              className="w-full p-4 border border-slate-200 dark:border-emerald-900/60 rounded-2xl bg-white dark:bg-nem-dark focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-700 dark:text-slate-200 h-32 resize-none text-sm"
+              placeholder="Ej. El ciclo del agua con evaporación, condensación y precipitación, explicado para niños de primaria..."
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
             />
@@ -1368,8 +1393,9 @@ function IlustracionView() {
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                 <Palette size={14} />
-                <span>Estilo de visualización / impresión:</span>
+                Estilo de ilustración:
               </label>
+
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -1383,6 +1409,7 @@ function IlustracionView() {
                 >
                   🎨 A Color
                 </button>
+
                 <button
                   type="button"
                   onClick={() => setEstilo('bn')}
@@ -1399,7 +1426,10 @@ function IlustracionView() {
             </div>
 
             <div>
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Ideas rápidas:</span>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+                Ideas para primaria:
+              </span>
+
               <div className="flex flex-wrap gap-2">
                 {EJEMPLOS_ILUSTRACION.map((idea, index) => (
                   <button
@@ -1414,7 +1444,11 @@ function IlustracionView() {
               </div>
             </div>
 
-            {error && <div className="p-3 bg-amber-50 text-amber-800 border border-amber-200 text-xs rounded-xl">{error}</div>}
+            {error && (
+              <div className="p-3 bg-amber-50 text-amber-800 border border-amber-200 text-xs rounded-xl">
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"
@@ -1424,90 +1458,68 @@ function IlustracionView() {
               {loading ? (
                 <>
                   <Loader2 className="animate-spin h-5 w-5 text-white" />
-                  <span>Buscando opciones didácticas...</span>
+                  Generando ilustración...
                 </>
               ) : (
                 <>
                   <ImageIcon className="w-5 h-5" />
-                  <span>Buscar Opciones de Láminas</span>
+                  Generar Ilustración
                 </>
               )}
             </button>
+
+            <p className="text-[11px] text-slate-400 text-center">
+              Generación mediante NVIDIA FLUX.1 Schnell.
+            </p>
           </form>
         </motion.div>
 
-        <motion.div variants={staggerItem} className="lg:col-span-7 glass-card p-6 flex flex-col justify-between min-h-[500px] space-y-5">
+        <motion.div
+          variants={staggerItem}
+          className="lg:col-span-7 glass-card p-6 flex flex-col justify-between min-h-[500px] space-y-5"
+        >
           {seleccionada ? (
             <>
-              <div className="w-full flex justify-between items-center">
+              <div className="w-full flex justify-between items-center gap-2">
                 <span className="text-xs font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/15 px-3 py-1 rounded-full border">
-                  Lámina seleccionada ({estilo === 'bn' ? 'Blanco y Negro' : 'A Color'})
+                  Ilustración generada
                 </span>
+
                 <a
                   href={seleccionada}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  download="ilustracion-edunem.jpg"
                   className="text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-sky-700 flex items-center gap-1.5 bg-slate-50 dark:bg-nem-dark px-3.5 py-2 rounded-xl border"
                 >
                   <Download size={15} />
-                  <span>Abrir / Descargar Original</span>
+                  Descargar imagen
                 </a>
               </div>
 
-              <div className="relative w-full h-[300px] bg-white border rounded-2xl overflow-hidden flex items-center justify-center p-3">
+              <div className="relative w-full min-h-[320px] bg-white border rounded-2xl overflow-hidden flex items-center justify-center p-3">
                 <img
                   src={seleccionada}
-                  alt="Recurso educativo EduNEM"
-                  className={cn(
-                    "max-h-full max-w-full object-contain rounded-xl transition-all duration-300",
-                    estilo === 'bn' && "grayscale contrast-150 brightness-105"
-                  )}
+                  alt={`Ilustración educativa: ${descripcion}`}
+                  className="max-h-[600px] max-w-full object-contain rounded-xl"
                 />
               </div>
 
-              {imagenes.length > 0 && (
-                <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-emerald-900/40">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                      Elige entre las opciones encontradas ({imagenes.length}):
-                    </span>
-                    <span className="text-[11px] text-slate-400">Haz clic en una para verla en grande</span>
-                  </div>
-                  <div className="grid grid-cols-4 gap-2.5 max-h-48 overflow-y-auto pr-1">
-                    {imagenes.map((imgUrl, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setSeleccionada(imgUrl)}
-                        className={cn(
-                          "h-20 bg-white border-2 rounded-xl overflow-hidden p-1 flex items-center justify-center transition-all cursor-pointer relative group",
-                          seleccionada === imgUrl
-                            ? "border-sky-600 ring-2 ring-sky-500/30 scale-102"
-                            : "border-slate-200 hover:border-sky-400 opacity-80 hover:opacity-100"
-                        )}
-                      >
-                        <img
-                          src={imgUrl}
-                          alt={`Opción ${idx + 1}`}
-                          className={cn(
-                            "max-h-full max-w-full object-contain",
-                            estilo === 'bn' && "grayscale contrast-150"
-                          )}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <p className="text-xs text-slate-400 text-center">
+                Tema: {descripcion}
+              </p>
             </>
           ) : (
             <div className="my-auto text-center p-8 space-y-3">
               <div className="w-16 h-16 bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
                 <ImageIcon size={30} />
               </div>
-              <h3 className="text-base font-semibold text-slate-700 dark:text-white">Lienzo Educativo EduNEM</h3>
-              <p className="text-sm text-slate-400 max-w-xs mx-auto leading-relaxed">
-                Escribe un tema educativo para obtener una galería instantánea de opciones visuales y elegir la mejor para tu clase.
+
+              <h3 className="text-base font-semibold text-slate-700 dark:text-white">
+                Lienzo Educativo EduNEM
+              </h3>
+
+              <p className="text-sm text-slate-400 max-w-sm mx-auto leading-relaxed">
+                Describe un tema y genera una ilustración educativa
+                diseñada para niñas y niños de primaria.
               </p>
             </div>
           )}
