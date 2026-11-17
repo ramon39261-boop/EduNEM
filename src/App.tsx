@@ -238,7 +238,7 @@ export function App() {
                 onClick={() => { setCurrentView('ilustracion'); setIsSidebarOpen(false); }} 
                 icon={<ImageIcon size={19} />} 
                 label="Ilustraciones" 
-                badge="IA"
+                badge="Buscador"
               />
             </nav>
           </div>
@@ -369,7 +369,7 @@ function HomeView({ setView }: { setView: (v: View) => void }) {
           </h2>
           
           <p className="text-slate-500 dark:text-slate-300/80 text-base md:text-lg leading-relaxed max-w-2xl">
-            Automatiza tus planeaciones didácticas vinculadas a los libros SEP, estructura proyectos sociocríticos y diseña láminas educativas listas para el aula.
+            Automatiza tus planeaciones didácticas vinculadas a los libros SEP, estructura proyectos sociocríticos y busca láminas educativas listas para el aula.
           </p>
 
           <div className="pt-2 flex flex-wrap gap-3">
@@ -421,9 +421,9 @@ function HomeView({ setView }: { setView: (v: View) => void }) {
           <FeatureCard 
             icon={<ImageIcon className="text-sky-600 dark:text-sky-400" size={24} />}
             iconBg="bg-sky-50 dark:bg-sky-500/15"
-            tag="IA Visual"
+            tag="Recursos Visuales"
             title="Láminas Educativas"
-            description="Genera esquemas, diagramas y dibujos para colorear a medida con inteligencia artificial."
+            description="Busca esquemas, diagramas y recursos visuales institucionales para tus clases en tiempo real."
             onClick={() => setView('ilustracion')}
           />
         </div>
@@ -1312,7 +1312,7 @@ function IlustracionView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleGenerar = async (e?: React.FormEvent) => {
+  const handleBuscar = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!descripcion.trim()) return;
 
@@ -1329,19 +1329,16 @@ function IlustracionView() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Error al generar la lámina.');
+      if (!response.ok) throw new Error(data.error || 'Error al buscar recurso.');
 
       if (data.images && data.images.length > 0) {
         setImagenes(data.images);
         setSeleccionada(data.images[0]);
-      } else if (data.imageUrl) {
-        setImagenes([data.imageUrl]);
-        setSeleccionada(data.imageUrl);
       } else {
-        setError('No se recibió ninguna imagen de NVIDIA NIM.');
+        setError('No se encontraron láminas exactas. Prueba con términos más generales (ej. "ciclo del agua", "partes de la planta").');
       }
     } catch (err: any) {
-      setError(err.message || 'Error desconocido al conectar con NVIDIA NIM');
+      setError(err.message || 'Error desconocido');
     } finally {
       setLoading(false);
     }
@@ -1351,16 +1348,16 @@ function IlustracionView() {
     <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-6">
       <motion.header variants={staggerItem} className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-emerald-900/40">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">Recursos Visuales con IA</span>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mt-0.5">Diseñador de Láminas Educativas</h2>
+          <span className="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">Recursos Visuales</span>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white mt-0.5">Buscador de Láminas Educativas</h2>
         </div>
-        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">Ilustraciones creadas a la medida con NVIDIA NIM</p>
+        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">Selección múltiple de esquemas y diagramas didácticos</p>
       </motion.header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
         <motion.div variants={staggerItem} className="lg:col-span-5 glass-card p-6 space-y-6">
-          <form onSubmit={handleGenerar} className="space-y-4">
-            <h2 className="text-sm font-bold text-slate-800 dark:text-white">1. Describe la Lámina que Necesitas</h2>
+          <form onSubmit={handleBuscar} className="space-y-4">
+            <h2 className="text-sm font-bold text-slate-800 dark:text-white">1. Describe el Recurso Visual Didáctico</h2>
             <textarea
               className="w-full p-4 border border-slate-200 dark:border-emerald-900/60 rounded-2xl bg-white dark:bg-nem-dark focus:ring-2 focus:ring-sky-500 focus:outline-none text-slate-700 dark:text-slate-200 h-28 resize-none text-sm"
               placeholder="Ej. Partes de una planta con raíz, tallo, hojas y flor..."
@@ -1371,7 +1368,7 @@ function IlustracionView() {
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                 <Palette size={14} />
-                <span>Estilo de diseño e impresión:</span>
+                <span>Estilo de visualización / impresión:</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -1396,7 +1393,7 @@ function IlustracionView() {
                       : "bg-slate-50 dark:bg-nem-dark border-slate-200 dark:border-emerald-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100"
                   )}
                 >
-                  ⬛ Para Colorear (B/N)
+                  ⬛ Blanco y Negro
                 </button>
               </div>
             </div>
@@ -1417,11 +1414,7 @@ function IlustracionView() {
               </div>
             </div>
 
-            {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/50 text-xs rounded-xl">
-                {error}
-              </div>
-            )}
+            {error && <div className="p-3 bg-amber-50 text-amber-800 border border-amber-200 text-xs rounded-xl">{error}</div>}
 
             <button
               type="submit"
@@ -1431,12 +1424,12 @@ function IlustracionView() {
               {loading ? (
                 <>
                   <Loader2 className="animate-spin h-5 w-5 text-white" />
-                  <span>Diseñando lámina con IA...</span>
+                  <span>Buscando opciones didácticas...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-5 h-5" />
-                  <span>Diseñar Lámina Educativa</span>
+                  <ImageIcon className="w-5 h-5" />
+                  <span>Buscar Opciones de Láminas</span>
                 </>
               )}
             </button>
@@ -1446,34 +1439,25 @@ function IlustracionView() {
         <motion.div variants={staggerItem} className="lg:col-span-7 glass-card p-6 flex flex-col justify-between min-h-[500px] space-y-5">
           {seleccionada ? (
             <>
-              <div className="w-full flex flex-wrap justify-between items-center gap-2">
+              <div className="w-full flex justify-between items-center">
                 <span className="text-xs font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/15 px-3 py-1 rounded-full border">
-                  Lámina diseñada ({estilo === 'bn' ? 'Blanco y Negro para imprimir' : 'A Color'})
+                  Lámina seleccionada ({estilo === 'bn' ? 'Blanco y Negro' : 'A Color'})
                 </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleGenerar()}
-                    disabled={loading}
-                    className="text-xs font-medium text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 px-3 py-2 rounded-xl border border-sky-200 dark:border-sky-800 cursor-pointer"
-                  >
-                    🔄 Generar otra variante
-                  </button>
-                  <a
-                    href={seleccionada}
-                    download={`lamina-edunem-${Date.now()}.jpg`}
-                    className="text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 flex items-center gap-1.5 px-3.5 py-2 rounded-xl shadow-xs transition-colors"
-                  >
-                    <Download size={15} />
-                    <span>Descargar JPG</span>
-                  </a>
-                </div>
+                <a
+                  href={seleccionada}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-sky-700 flex items-center gap-1.5 bg-slate-50 dark:bg-nem-dark px-3.5 py-2 rounded-xl border"
+                >
+                  <Download size={15} />
+                  <span>Abrir / Descargar Original</span>
+                </a>
               </div>
 
-              <div className="relative w-full h-[380px] bg-white border rounded-2xl overflow-hidden flex items-center justify-center p-3">
+              <div className="relative w-full h-[300px] bg-white border rounded-2xl overflow-hidden flex items-center justify-center p-3">
                 <img
                   src={seleccionada}
-                  alt={descripcion}
+                  alt="Recurso educativo EduNEM"
                   className={cn(
                     "max-h-full max-w-full object-contain rounded-xl transition-all duration-300",
                     estilo === 'bn' && "grayscale contrast-150 brightness-105"
@@ -1481,21 +1465,24 @@ function IlustracionView() {
                 />
               </div>
 
-              {imagenes.length > 1 && (
+              {imagenes.length > 0 && (
                 <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-emerald-900/40">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    Variantes generadas ({imagenes.length}):
-                  </span>
-                  <div className="grid grid-cols-4 gap-2.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Elige entre las opciones encontradas ({imagenes.length}):
+                    </span>
+                    <span className="text-[11px] text-slate-400">Haz clic en una para verla en grande</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2.5 max-h-48 overflow-y-auto pr-1">
                     {imagenes.map((imgUrl, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => setSeleccionada(imgUrl)}
                         className={cn(
-                          "h-20 bg-white border-2 rounded-xl overflow-hidden p-1 flex items-center justify-center transition-all cursor-pointer",
+                          "h-20 bg-white border-2 rounded-xl overflow-hidden p-1 flex items-center justify-center transition-all cursor-pointer relative group",
                           seleccionada === imgUrl
-                            ? "border-sky-600 ring-2 ring-sky-500/30"
+                            ? "border-sky-600 ring-2 ring-sky-500/30 scale-102"
                             : "border-slate-200 hover:border-sky-400 opacity-80 hover:opacity-100"
                         )}
                       >
@@ -1520,7 +1507,7 @@ function IlustracionView() {
               </div>
               <h3 className="text-base font-semibold text-slate-700 dark:text-white">Lienzo Educativo EduNEM</h3>
               <p className="text-sm text-slate-400 max-w-xs mx-auto leading-relaxed">
-                Describe cualquier tema de primaria y la IA de NVIDIA diseñará una lámina didáctica lista para proyectar o imprimir.
+                Escribe un tema educativo para obtener una galería instantánea de opciones visuales y elegir la mejor para tu clase.
               </p>
             </div>
           )}
