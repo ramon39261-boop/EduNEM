@@ -3,76 +3,93 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Método no permitido" });
   }
 
+  const apiKey = process.env.NVIDIA_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: "Falta configurar NVIDIA_API_KEY en Vercel" });
+  }
+
   try {
     const { descripcion, estilo } = req.body || {};
-    const texto = String(descripcion || "").trim().toLowerCase();
+    const texto = String(descripcion || "").trim();
 
     if (!texto) {
-      return res.status(400).json({ error: "Escribe un tema educativo" });
+      return res.status(400).json({ error: "Escribe el tema de la lámina educativa" });
     }
 
     const esBn = estilo === "bn";
 
-    // Diccionario de equivalencias exactas para asegurar aciertos pedagógicos
-    const equivalencias = {
-      "mapa de mexico": "map of Mexico geography states blank outline",
-      "mapa": "map of Mexico geography",
-      "ciclo del agua": "water cycle diagram school science",
-      "plato del bien comer": "healthy food plate nutrition chart",
-      "partes de una planta": "plant anatomy school diagram biology",
-      "sistema solar": "solar system planets space diagram",
-      "aparato digestivo": "digestive system diagram school",
-      "aparato respiratorio": "respiratory system diagram",
-      "célula": "cell structure biology diagram",
-      "volcán": "volcano cross section diagram"
-    };
-
-    let queryFinal = "mexico educational illustration";
-    for (const [clave, valor] of Object.entries(equivalencias)) {
-      if (texto.includes(clave)) {
-        queryFinal = valor;
-        break;
-      }
-    }
-
-    if (esBn) {
-      queryFinal += " line art black and white coloring page outline";
-    } else {
-      queryFinal += " bright vector illustration school poster";
-    }
-
-    // Consulta dirigida a Wikimedia Commons orientada estrictamente a imágenes y mapas
-    const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
-      queryFinal
-    )}&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&origin=*`;
-
-    const response = await fetch(wikiUrl, {
-      headers: { "User-Agent": "EduNEM-App/1.0" }
+    // Paso 1: Nemotron traduce y optimiza la petición del docente a un prompt visual exacto
+    const llmRes = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: "nvidia/nemotron-3.5-lightning-30b-a3b",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an educational illustrator prompt engineer for Mexican primary schools. Translate the user's topic into a clear, descriptive English image generation prompt (max 45 words). Output ONLY the prompt text, with no quotes, labels, or explanations."
+          },
+          {
+            role: "user",
+            content: esBn
+              ? `Topic: ${texto}. Style: black and white coloring book line art for primary school kids, pure white background, clean thick black outlines, no gray shading, easy to print and photocopy.`
+              : `Topic: ${texto}. Style: bright colorful educational school poster illustration, flat clean vector art for primary school kids, white background, clear visual elements.`
+          }
+        ],
+        temperature: 0.2,
+        max_tokens: 100
+      })
     });
 
-    const data = await response.json();
-    const pages = data?.query?.pages || {};
-    
-    let imagenes = Object.values(pages)
-      .map((p) => p.imageinfo?.[0]?.thumburl || p.imageinfo?.[0]?.url)
-      .filter(Boolean);
-
-    // Respaldo de seguridad si la búsqueda específica arroja pocos resultados
-    if (imagenes.length === 0) {
-      imagenes = [
-        "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Mexico_in_its_region_%28USA_centered%29.svg/800px-Mexico_in_its_region_%28USA_centered%29.svg.png",
-        "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Mexico_%28orthographic_projection%29.svg/800px-Mexico_%28orthographic_projection%29.svg.png"
-      ];
+    let promptVisual = texto;
+    if (llmRes.ok) {
+      const llmData = await llmRes.json();
+      promptVisual = llmData.choices?.[0]?.message?.content?.trim() || texto;
     }
+
+    // Paso 2: FLUX.1-schnell de NVIDIA NIM genera la lámina en ~2 segundos
+    const imgRes = await fetch("https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-schnell", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({
+        prompt: promptVisual,
+        width: 1024,
+        height: 768,
+        seed: Math.floor(Math.random() * 100000),
+        steps: 4
+      })
+    });
+
+    if (!imgRes.ok) {
+      const errText = await imgRes.text();
+      throw new Error(`Error NVIDIA NIM Imagen (${imgRes.status}): ${errText}`);
+    }
+
+    const imgData = await imgRes.json();
+    const base64Img = imgData.artifacts?.[0]?.base64;
+
+    if (!base64Img) {
+      throw new Error("NVIDIA NIM no devolvió datos de imagen.");
+    }
+
+    const dataUrl = `data:image/jpeg;base64,${base64Img}`;
 
     return res.status(200).json({
-      images: imagenes,
-      imageUrl: imagenes[0]
+      images: [dataUrl],
+      imageUrl: dataUrl
     });
   } catch (error) {
-    console.error("Error en buscador visual:", error);
+    console.error("Error en NVIDIA NIM:", error);
     return res.status(500).json({
-      error: "No se pudo conectar con el catálogo visual"
+      error: error.message || "Error al generar la lámina con NVIDIA NIM"
     });
   }
 }
