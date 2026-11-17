@@ -9,7 +9,8 @@ export default async function handler(req, res) {
   try {
     const apiKey = process.env.NVIDIA_IMAGE_API_KEY;
     const modelo =
-      process.env.NVIDIA_IMAGE_MODEL || "black-forest-labs/flux.1-schnell";
+      process.env.NVIDIA_IMAGE_MODEL ||
+      "black-forest-labs/flux.1-schnell";
 
     if (!apiKey) {
       return res.status(500).json({
@@ -41,9 +42,7 @@ Style:
 - Clean background.
 - No watermark.
 - No signatures.
-- No unnecessary decorative elements.
-- No realistic violence or frightening content.
-- Educational and age-appropriate.
+- No frightening or inappropriate content.
 
 ${esBn
   ? "Black and white coloring book illustration, clean bold outlines, white background, no gray shades, no colors."
@@ -61,31 +60,50 @@ ${esBn
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-  prompt: prompt,
-  height: 1024,
-  width: 1024,
-  cfg_scale: 0,
-  mode: "base",
-  image: null,
-  samples: 1,
-  steps: 4
-})
+        prompt: prompt,
+        height: 1024,
+        width: 1024,
+        cfg_scale: 0,
+        mode: "base",
+        image: null,
+        samples: 1,
+        steps: 4
+      })
+    });
 
-    const result = await response.json();
+    // Leer la respuesta sin asumir que siempre será JSON.
+    const rawResponse = await response.text();
 
+    let result;
+
+    try {
+      result = JSON.parse(rawResponse);
+    } catch {
+      result = {
+        error: rawResponse || "El servidor devolvió una respuesta vacía"
+      };
+    }
+
+    // Mostrar el error real de NVIDIA.
     if (!response.ok) {
-  console.error("Error NVIDIA FLUX:", result);
+      console.error("Error NVIDIA FLUX:", result);
 
-  const mensaje = result?.detail || result?.message || result?.title;
+      const mensaje =
+        result?.error ||
+        result?.detail ||
+        result?.message ||
+        result?.title;
 
-  return res.status(response.status).json({
-    error: typeof mensaje === "string"
-      ? mensaje
-      : JSON.stringify(mensaje || result),
-    details: result
-  });
-}
+      return res.status(response.status).json({
+        error: typeof mensaje === "string"
+          ? mensaje
+          : JSON.stringify(mensaje || result),
+        details: result,
+        status: response.status
+      });
+    }
 
+    // Obtener la imagen de los formatos de respuesta habituales.
     const base64 =
       result?.data?.[0]?.artifacts?.[0]?.base64 ||
       result?.artifacts?.[0]?.base64 ||
@@ -114,8 +132,7 @@ ${esBn
     console.error("Error en generación de ilustración:", error);
 
     return res.status(500).json({
-      error: "Error interno al generar la ilustración",
-      details: error.message
+      error: error.message || "Error interno al generar la ilustración"
     });
   }
 }
