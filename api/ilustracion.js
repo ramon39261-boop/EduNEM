@@ -1,89 +1,132 @@
+
+const NVIDIA_IMAGE_URL =
+  "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-schnell";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Método no permitido" });
   }
 
   try {
-    const { descripcion, estilo } = req.body || {};
-    const texto = String(descripcion || "").trim();
+    const apiKey = process.env.NVIDIA_IMAGE_API_KEY;
 
-    if (!texto) {
-      return res.status(400).json({ error: "Escribe un tema educativo" });
+    if (!apiKey) {
+      return res.status(500).json({
+        error: "Falta configurar NVIDIA_IMAGE_API_KEY en Vercel."
+      });
+    }
+
+    const { descripcion, estilo } = req.body || {};
+    const tema = String(descripcion || "").trim();
+
+    if (!tema) {
+      return res.status(400).json({
+        error: "Escribe el tema de la ilustración."
+      });
+    }
+
+    if (tema.length > 1500) {
+      return res.status(400).json({
+        error: "La descripción es demasiado larga."
+      });
     }
 
     const esBn = estilo === "bn";
 
-    // Diccionario de términos clave en inglés para maximizar aciertos en buscadores globales abiertos
-    const traducciones = {
-      "ciclo del agua": "water cycle diagram school",
-      "plato del bien comer": "food nutrition plate diagram",
-      "partes de una planta": "plant anatomy school diagram",
-      "sistema solar": "solar system planets kids",
-      "aparato digestivo": "digestive system diagram school",
-      "aparato respiratorio": "respiratory system diagram",
-      "célula": "cell structure biology diagram",
-      "volcán": "volcano cross section school",
-      "mapa de mexico": "mexico map educational"
-    };
+    const estiloVisual = esBn
+      ? `Black and white educational coloring page for elementary school children aged 6 to 12.
+         Clean white background, thick clear black outlines, simple friendly cartoon drawings,
+         large shapes, no gray shading, no colors, printable worksheet illustration.`
+      : `Colorful educational illustration for elementary school children aged 6 to 12.
+         Friendly cartoon drawing style, bright harmonious colors, clear shapes,
+         simple visual composition, attractive children's school textbook illustration.`;
 
-    let queryFinal = texto.toLowerCase();
-    for (const [clave, valor] of Object.entries(traducciones)) {
-      if (queryFinal.includes(clave)) {
-        queryFinal = valor;
-        break;
-      }
+    const prompt = `
+Create one high-quality educational illustration for Mexican elementary school students.
+
+TOPIC: ${tema}
+
+STYLE:
+${estiloVisual}
+
+REQUIREMENTS:
+- Appropriate for children aged 6 to 12.
+- Scientifically and educationally accurate.
+- Show the main elements of the topic clearly.
+- Friendly, attractive and easy to understand.
+- Well organized composition.
+- No photographs.
+- No logos, watermarks or signatures.
+- Avoid complicated technical details.
+- Do not include random letters or illegible text.
+`;
+
+    const response = await fetch(NVIDIA_IMAGE_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        prompt,
+        height: 1024,
+        width: 1024,
+        mode: "base",
+        samples: 1,
+        seed: 0,
+        steps: 4
+      })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      console.error("NVIDIA FLUX error:", data);
+
+      const detalle =
+        data?.detail ||
+        data?.error?.message ||
+        data?.message ||
+        `NVIDIA respondió con HTTP ${response.status}`;
+
+      return res.status(response.status).json({
+        error: detalle
+      });
     }
 
-    if (esBn) {
-      queryFinal += " line art black and white outline";
-    } else {
-      queryFinal += " educational illustration vector";
+    // NVIDIA puede devolver la imagen en artifacts o en data.
+    const imagenBase64 =
+      data?.artifacts?.[0]?.base64 ||
+      data?.data?.[0]?.b64_json ||
+      data?.image ||
+      "";
+
+    if (!imagenBase64) {
+      console.error("Respuesta NVIDIA sin imagen:", data);
+
+      return res.status(502).json({
+        error: "NVIDIA respondió, pero no devolvió una imagen."
+      });
     }
 
-    // Consulta en paralelo a Wikimedia Commons (enorme base de esquemas científicos/educativos)
-    const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
-      `filetype:bitmap|drawing ${queryFinal}`
-    )}&gsrnamespace=6&gsrlimit=6&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&origin=*`;
-
-    const openverseUrl = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(
-      queryFinal
-    )}&category=illustration,digitized_artwork&page_size=6`;
-
-    const [wikiRes, openverseRes] = await Promise.all([
-      fetch(wikiUrl, { headers: { "User-Agent": "EduNEM-App/1.0" } }).catch(() => null),
-      fetch(openverseUrl, { headers: { "User-Agent": "EduNEM-App/1.0" } }).catch(() => null)
-    ]);
-
-    let imagenes = [];
-
-    if (wikiRes && wikiRes.ok) {
-      const wikiData = await wikiRes.json();
-      const pages = wikiData?.query?.pages || {};
-      const wikiImgs = Object.values(pages)
-        .map((p) => p.imageinfo?.[0]?.thumburl || p.imageinfo?.[0]?.url)
-        .filter(Boolean);
-      imagenes.push(...wikiImgs);
-    }
-
-    if (openverseRes && openverseRes.ok) {
-      const openData = await openverseRes.json();
-      const openImgs = (openData?.results || [])
-        .map((item) => item.thumbnail || item.url)
-        .filter(Boolean);
-      imagenes.push(...openImgs);
-    }
-
-    // Eliminamos duplicados
-    imagenes = [...new Set(imagenes)];
+    const imagen = imagenBase64.startsWith("data:")
+      ? imagenBase64
+      : `data:image/jpeg;base64,${imagenBase64}`;
 
     return res.status(200).json({
-      images: imagenes,
-      imageUrl: imagenes[0] || ""
+      images: [imagen],
+      imageUrl: imagen,
+      total: 1,
+      modelo: "FLUX.1 Schnell"
     });
+
   } catch (error) {
-    console.error("Error en buscador visual:", error);
+    console.error("Error en generación de ilustración:", error);
+
     return res.status(500).json({
-      error: "No se pudo conectar con el catálogo visual"
+      error: error.message || "No se pudo generar la ilustración."
     });
   }
 }
+
