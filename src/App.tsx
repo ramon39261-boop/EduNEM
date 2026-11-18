@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import ExamenView from './components/ExamenView';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -88,7 +88,7 @@ const EJEMPLOS_ILUSTRACION = [
   "Sistema solar con los planetas alrededor del sol"
 ];
 
-type View = 'home' | 'planeacion' | 'proyecto' | 'ilustracion';
+type View = 'home' | 'planeacion' | 'proyecto' | 'ilustracion' | 'examen';
 
 const staggerContainer = {
   hidden: { opacity: 0 },
@@ -125,14 +125,15 @@ export function App() {
   }, [darkMode]);
 
   const renderView = () => {
-    switch (currentView) {
-      case 'home': return <HomeView setView={setCurrentView} />;
-      case 'planeacion': return <PlaneacionView />;
-      case 'proyecto': return <ProyectoView />;
-      case 'ilustracion': return <IlustracionView />;
-      default: return <HomeView setView={setCurrentView} />;
-    }
-  };
+  switch (currentView) {
+    case 'home': return <HomeView setView={setCurrentView} />;
+    case 'planeacion': return <PlaneacionView />;
+    case 'proyecto': return <ProyectoView />;
+    case 'ilustracion': return <IlustracionView />;
+    case 'examen': return <ExamenView />;
+    default: return <HomeView setView={setCurrentView} />;
+  }
+};
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-nem-cream dark:bg-nem-dark text-slate-800 dark:text-slate-100 relative overflow-x-hidden">
@@ -220,12 +221,19 @@ export function App() {
                 icon={<Home size={19} />} 
                 label="Inicio" 
               />
-              <NavItem 
-                active={currentView === 'planeacion'} 
-                onClick={() => { setCurrentView('planeacion'); setIsSidebarOpen(false); }} 
-                icon={<FileText size={19} />} 
-                label="Planeaciones" 
-                badge="SEP"
+              <NavItem
+               active={currentView === 'planeacion'}
+               onClick={() => { setCurrentView('planeacion'); setIsSidebarOpen(false); }}
+               icon={<FileText size={19} />}
+               label="Planeaciones"
+               badge="SEP"
+              />
+             <NavItem
+               active={currentView === 'examen'}
+               onClick={() => { setCurrentView('examen'); setIsSidebarOpen(false); }}
+               icon={<GraduationCap size={19} />}
+               label="Exámenes"
+               badge="NEM"
               />
               <NavItem 
                 active={currentView === 'proyecto'} 
