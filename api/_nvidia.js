@@ -10,7 +10,7 @@ export async function generarJSON(prompt, instrucciones) {
     throw error;
   }
 
-  const model = process.env.NVIDIA_MODEL || "openai/gpt-oss-20b";
+  const model = process.env.NVIDIA_MODEL || "stg/nvidia/nemotron-3.5-bolt-e4b";
 
   const response = await fetch(NVIDIA_URL, {
     method: "POST",
