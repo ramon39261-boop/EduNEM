@@ -1,14 +1,17 @@
+
 const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 
 export async function generarJSON(prompt, instrucciones) {
   const apiKey = process.env.NVIDIA_API_KEY;
+
   if (!apiKey) {
-    const error = new Error("Falta configurar NVIDIA_API_KEY en las variables de entorno de Vercel.");
+    const error = new Error("Falta configurar NVIDIA_API_KEY en Vercel.");
     error.status = 500;
     throw error;
   }
 
   const model = process.env.NVIDIA_MODEL || "openai/gpt-oss-20b";
+
   const response = await fetch(NVIDIA_URL, {
     method: "POST",
     headers: {
@@ -27,20 +30,38 @@ export async function generarJSON(prompt, instrucciones) {
     }),
   });
 
-  const payload = await response.json().catch(() => ({}));
+  const rawBody = await response.text();
+
+  let payload = {};
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    payload = {};
+  }
+
   if (!response.ok) {
-    const detail = payload?.error?.message || payload?.message || `NVIDIA respondió HTTP ${response.status}`;
-    const error = new Error(detail);
+    const detail =
+      payload?.error?.message ||
+      payload?.detail ||
+      payload?.message ||
+      payload?.title ||
+      rawBody ||
+      `NVIDIA respondió HTTP ${response.status}`;
+
+    const error = new Error(
+      `NVIDIA HTTP ${response.status}: ${String(detail).slice(0, 1500)}`
+    );
+
     error.status = response.status;
     throw error;
   }
 
   const content = payload?.choices?.[0]?.message?.content;
+
   if (typeof content !== "string" || !content.trim()) {
     throw new Error("NVIDIA no devolvió contenido. Intenta nuevamente.");
   }
 
-  // Elimina cercas Markdown si el modelo las agrega.
   const cleaned = content.trim()
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "");
@@ -50,16 +71,22 @@ export async function generarJSON(prompt, instrucciones) {
   } catch {
     const start = cleaned.indexOf("{");
     const end = cleaned.lastIndexOf("}");
+
     if (start >= 0 && end > start) {
-      try { return JSON.parse(cleaned.slice(start, end + 1)); } catch {}
+      try {
+        return JSON.parse(cleaned.slice(start, end + 1));
+      } catch {}
     }
-    throw new Error("La IA respondió, pero el formato no fue JSON válido. Intenta generar nuevamente.");
+
+    throw new Error("La IA respondió, pero el formato no fue JSON válido.");
   }
 }
 
 export function responderError(res, error) {
   console.error("EduNEM NVIDIA API:", error);
+
   return res.status(error.status || 500).json({
     error: error.message || "Error al comunicarse con NVIDIA.",
   });
 }
+
