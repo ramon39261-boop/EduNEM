@@ -1,4 +1,5 @@
-export type CampoFormativo = 
+
+export type CampoFormativo =
   | "Lenguajes"
   | "Saberes y Pensamiento Científico"
   | "Ética, Naturaleza y Sociedades"
@@ -44,3 +45,57 @@ export interface Proyecto {
   }[];
   productoFinal: string;
 }
+
+// ==========================================
+// TIPOS PARA EL GENERADOR DE EXÁMENES NEM
+// ==========================================
+
+export type TipoReactivo =
+  | "opcion_multiple"
+  | "verdadero_falso"
+  | "relacionar_columnas"
+  | "respuesta_abierta";
+
+export interface PreguntaExamen {
+  numero: number;
+  tipo: TipoReactivo;
+  enunciado: string;
+  opciones?: string[];
+  respuestaCorrecta?: string;
+  respuestaEsperada?: string;
+  columnaA?: string[];
+  columnaB?: string[];
+  relacionCorrecta?: string[];
+  valor: number;
+}
+
+export interface CriterioEvaluacion {
+  criterio: string;
+  descripcion: string;
+  puntaje: number;
+}
+
+export interface Examen {
+  titulo: string;
+  grado: string;
+  campoFormativo: CampoFormativo;
+  contenido: string;
+  pda: string;
+  instrucciones: string;
+  preguntas: PreguntaExamen[];
+  puntajeTotal: number;
+  criteriosEvaluacion: CriterioEvaluacion[];
+  claveRespuestas: string[];
+  recomendacionesDocente: string;
+}
+
+export interface ConfiguracionExamen {
+  grado: string;
+  campoFormativo: CampoFormativo;
+  contenido: string;
+  pda: string;
+  cantidadPreguntas: number;
+  tiposReactivos: TipoReactivo[];
+  dificultad: "basica" | "intermedia" | "avanzada" | "mixta";
+}
+
