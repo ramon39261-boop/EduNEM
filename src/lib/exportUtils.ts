@@ -1,11 +1,17 @@
-import { Planeacion, Proyecto } from '../types';
+
+import {
+  Planeacion,
+  Proyecto,
+  Examen,
+  PreguntaExamen
+} from '../types';
 
 /**
- * Escapes HTML characters for safe document embedding
+ * Escapa caracteres HTML para proteger el contenido del documento.
  */
 function escapeHtml(text?: string): string {
   if (!text) return '';
-  return text
+  return String(text)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -14,7 +20,7 @@ function escapeHtml(text?: string): string {
 }
 
 /**
- * Genera y descarga un archivo Word (.doc) exactamente igual al diseño y contenido generado para la Planeación Didáctica
+ * Genera y descarga un archivo Word (.doc) para Planeación Didáctica.
  */
 export function exportarPlaneacionWord(
   planeacion: Planeacion,
@@ -31,6 +37,7 @@ export function exportarPlaneacionWord(
   const desarrollo = escapeHtml(planeacion.desarrollo || '').replace(/\n/g, '<br/>');
   const cierre = escapeHtml(planeacion.cierre || '').replace(/\n/g, '<br/>');
   const evaluacion = escapeHtml(planeacion.evaluacion || '').replace(/\n/g, '<br/>');
+
   const recursosList = (planeacion.recursos || [])
     .map(r => `<li style="margin-bottom: 4px;">${escapeHtml(r)}</li>`)
     .join('');
@@ -188,7 +195,6 @@ export function exportarPlaneacionWord(
   </style>
 </head>
 <body>
-  <!-- Encabezado Institucional -->
   <table class="header-table" cellpadding="0" cellspacing="0">
     <tr>
       <td>
@@ -199,7 +205,6 @@ export function exportarPlaneacionWord(
     </tr>
   </table>
 
-  <!-- Metadatos de la Planeación -->
   <table class="meta-box" cellpadding="0" cellspacing="0">
     <tr>
       <td style="width: 50%;">
@@ -229,13 +234,11 @@ export function exportarPlaneacionWord(
     </tr>
   </table>
 
-  <!-- PDA -->
   <div class="card-section" style="border-left: 4px solid #5A5A40; background-color: #fcfcfb;">
     <div class="section-title">PDA (Proceso de Desarrollo de Aprendizaje)</div>
     <div class="section-content" style="font-weight: 500;">${pda}</div>
   </div>
 
-  <!-- Secuencia Didáctica (Inicio, Desarrollo y Cierre) -->
   <div style="margin-top: 10px; margin-bottom: 6px;">
     <div class="section-title">Secuencia Didáctica (Momentos Pedagógicos)</div>
   </div>
@@ -256,13 +259,11 @@ export function exportarPlaneacionWord(
     </tr>
   </table>
 
-  <!-- Evaluación Formativa -->
   <div class="card-section">
     <div class="section-title">Evaluación Formativa (Criterios e Instrumentos)</div>
     <div class="section-content">${evaluacion}</div>
   </div>
 
-  <!-- Recursos y Materiales -->
   <div class="card-section">
     <div class="section-title">Recursos y Materiales Didácticos</div>
     <ul style="margin: 6px 0 0 18px; padding: 0;">
@@ -270,7 +271,6 @@ export function exportarPlaneacionWord(
     </ul>
   </div>
 
-  <!-- Firmas de Autorización -->
   <table class="signatures-table" cellpadding="0" cellspacing="0">
     <tr>
       <td>
@@ -303,7 +303,7 @@ export function exportarPlaneacionWord(
 }
 
 /**
- * Genera y descarga un archivo Word (.doc) exactamente igual al diseño y contenido generado para el Proyecto Sociocrítico
+ * Genera y descarga un archivo Word (.doc) para Proyecto Sociocrítico.
  */
 export function exportarProyectoWord(
   proyecto: Proyecto,
@@ -321,6 +321,7 @@ export function exportarProyectoWord(
       const actividadesList = (f.actividades || [])
         .map(a => `<li style="margin-bottom: 4px;">${escapeHtml(a)}</li>`)
         .join('');
+
       return `
       <div style="margin-bottom: 14px; border: 1px solid #cbd5e1; background-color: #ffffff; padding: 12px 14px;">
         <div style="font-weight: bold; color: #1e3a2f; font-size: 11pt; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
@@ -504,3 +505,440 @@ export function exportarProyectoWord(
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+// ==========================================
+// EXPORTACIÓN DE EXÁMENES NEM
+// ==========================================
+
+/**
+ * Genera un archivo Word con dos secciones:
+ * 1. Examen para el alumno, sin respuestas.
+ * 2. Clave y criterios de evaluación para el docente.
+ */
+export function exportarExamenWord(examen: Examen) {
+  const titulo = escapeHtml(examen.titulo || 'Examen de evaluación NEM');
+  const grado = escapeHtml(examen.grado || 'Primaria');
+  const campo = escapeHtml(examen.campoFormativo || '');
+  const contenido = escapeHtml(examen.contenido || '');
+  const pda = escapeHtml(examen.pda || '');
+  const instrucciones = escapeHtml(examen.instrucciones || 'Lee cuidadosamente cada pregunta y responde según se te indique.')
+    .replace(/\n/g, '<br/>');
+
+  const preguntasHtml = (examen.preguntas || [])
+    .map((pregunta: PreguntaExamen, indice: number) => {
+      const numero = pregunta.numero || indice + 1;
+      const valor = Number(pregunta.valor) || 1;
+
+      let contenidoPregunta = '';
+
+      if (pregunta.tipo === 'opcion_multiple') {
+        const opciones = (pregunta.opciones || [])
+          .map((opcion, i) => `
+            <div style="margin: 5px 0 5px 20px;">
+              <strong>${String.fromCharCode(65 + i)}.</strong>
+              ${escapeHtml(opcion)}
+            </div>
+          `)
+          .join('');
+
+        contenidoPregunta = `
+          <div style="margin-top: 8px;">
+            ${opciones}
+          </div>
+        `;
+      } else if (pregunta.tipo === 'verdadero_falso') {
+        contenidoPregunta = `
+          <div style="margin: 10px 0 0 20px;">
+            ( &nbsp; ) Verdadero
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            ( &nbsp; ) Falso
+          </div>
+        `;
+      } else if (pregunta.tipo === 'relacionar_columnas') {
+        const columnaA = pregunta.columnaA || [];
+        const columnaB = pregunta.columnaB || [];
+
+        contenidoPregunta = `
+          <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <tr>
+              <td style="width: 50%; vertical-align: top; padding: 8px;">
+                <strong>Columna A</strong>
+                <ol>
+                  ${columnaA.map(item => `<li style="margin-bottom: 8px;">${escapeHtml(item)}</li>`).join('')}
+                </ol>
+              </td>
+              <td style="width: 50%; vertical-align: top; padding: 8px;">
+                <strong>Columna B</strong>
+                <ol>
+                  ${columnaB.map(item => `<li style="margin-bottom: 8px;">${escapeHtml(item)}</li>`).join('')}
+                </ol>
+              </td>
+            </tr>
+          </table>
+          <div style="margin-top: 8px;">
+            Escribe las correspondencias:
+            <div style="border-bottom: 1px solid #94a3b8; height: 24px;"></div>
+          </div>
+        `;
+      } else if (pregunta.tipo === 'respuesta_abierta') {
+        contenidoPregunta = `
+          <div style="margin-top: 12px;">
+            <div style="border-bottom: 1px solid #94a3b8; height: 24px;"></div>
+            <div style="border-bottom: 1px solid #94a3b8; height: 24px;"></div>
+            <div style="border-bottom: 1px solid #94a3b8; height: 24px;"></div>
+          </div>
+        `;
+      }
+
+      return `
+        <div style="margin-bottom: 20px; page-break-inside: avoid;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="vertical-align: top;">
+                <strong style="color: #1e3a2f; font-size: 11pt;">
+                  ${numero}. ${escapeHtml(pregunta.enunciado)}
+                </strong>
+              </td>
+              <td style="width: 75px; text-align: right; vertical-align: top; white-space: nowrap;">
+                <span style="font-size: 9pt; color: #64748b;">(${valor} pts.)</span>
+              </td>
+            </tr>
+          </table>
+          ${contenidoPregunta}
+        </div>
+      `;
+    })
+    .join('');
+
+  const criteriosHtml = (examen.criteriosEvaluacion || [])
+    .map(criterio => `
+      <tr>
+        <td style="border: 1px solid #cbd5e1; padding: 8px;">
+          ${escapeHtml(criterio.criterio)}
+        </td>
+        <td style="border: 1px solid #cbd5e1; padding: 8px;">
+          ${escapeHtml(criterio.descripcion)}
+        </td>
+        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">
+          ${Number(criterio.puntaje) || 0}
+        </td>
+      </tr>
+    `)
+    .join('');
+
+  const claveHtml = (examen.claveRespuestas || [])
+    .map((respuesta, indice) => `
+      <tr>
+        <td style="width: 45px; border: 1px solid #cbd5e1; padding: 8px; text-align: center;">
+          ${indice + 1}
+        </td>
+        <td style="border: 1px solid #cbd5e1; padding: 8px;">
+          ${escapeHtml(respuesta)}
+        </td>
+      </tr>
+    `)
+    .join('');
+
+  const htmlContent = `
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8">
+  <title>${titulo}</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    @page {
+      size: letter portrait;
+      margin: 1.8cm;
+    }
+    body {
+      font-family: Calibri, Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.45;
+      color: #1e293b;
+      background: #ffffff;
+    }
+    .header {
+      border-bottom: 3px solid #1e3a2f;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    }
+    .header-tag {
+      font-size: 9pt;
+      font-weight: bold;
+      color: #5A5A40;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .header-title {
+      font-family: Georgia, serif;
+      font-size: 20pt;
+      font-weight: bold;
+      color: #1e3a2f;
+      margin: 6px 0;
+    }
+    .subtitle {
+      color: #64748b;
+      font-size: 10pt;
+    }
+    .meta {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 18px;
+      background: #f8fafc;
+    }
+    .meta td {
+      border: 1px solid #cbd5e1;
+      padding: 8px;
+      vertical-align: top;
+      font-size: 9.5pt;
+    }
+    .meta-label {
+      display: block;
+      color: #64748b;
+      font-size: 8pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .section-title {
+      color: #1e3a2f;
+      font-size: 11pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      border-bottom: 1.5px solid #cbd5e1;
+      padding-bottom: 5px;
+      margin: 18px 0 10px 0;
+    }
+    .student-data {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0;
+    }
+    .student-data td {
+      padding: 8px 5px;
+      border-bottom: 1px solid #cbd5e1;
+      font-size: 10pt;
+    }
+    .question {
+      margin-bottom: 18px;
+    }
+    .teacher-page {
+      page-break-before: always;
+      mso-break-type: page;
+    }
+    .teacher-warning {
+      border: 1px solid #b45309;
+      background: #fffbeb;
+      color: #92400e;
+      padding: 10px;
+      margin: 12px 0 18px 0;
+      font-weight: bold;
+      text-align: center;
+    }
+    .teacher-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 18px 0;
+      font-size: 9.5pt;
+    }
+    .teacher-table th {
+      background: #e2e8f0;
+      border: 1px solid #cbd5e1;
+      padding: 8px;
+      text-align: left;
+      color: #1e3a2f;
+    }
+    .teacher-table td {
+      border: 1px solid #cbd5e1;
+      padding: 8px;
+      vertical-align: top;
+    }
+    .recommendations {
+      border-left: 4px solid #5A5A40;
+      background: #f8fafc;
+      padding: 12px;
+      margin-top: 14px;
+    }
+    .signatures {
+      width: 100%;
+      margin-top: 38px;
+      border-collapse: collapse;
+    }
+    .signatures td {
+      width: 50%;
+      text-align: center;
+      padding: 25px 15px 0 15px;
+    }
+    .sign-line {
+      border-top: 1px solid #475569;
+      width: 75%;
+      margin: 0 auto 6px auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- EXAMEN DEL ALUMNO -->
+  <div class="header">
+    <div class="header-tag">Nueva Escuela Mexicana • Evaluación del aprendizaje</div>
+    <div class="header-title">${titulo}</div>
+    <div class="subtitle">Instrumento de evaluación para educación primaria</div>
+  </div>
+
+  <table class="meta">
+    <tr>
+      <td style="width: 50%;">
+        <span class="meta-label">Grado escolar</span>
+        <strong>${grado}</strong>
+      </td>
+      <td style="width: 50%;">
+        <span class="meta-label">Campo formativo</span>
+        <strong>${campo}</strong>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <span class="meta-label">Contenido curricular</span>
+        ${contenido}
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <span class="meta-label">Proceso de Desarrollo de Aprendizaje (PDA)</span>
+        ${pda}
+      </td>
+    </tr>
+  </table>
+
+  <table class="student-data">
+    <tr>
+      <td style="width: 50%;"><strong>Nombre del alumno:</strong></td>
+      <td style="width: 50%;"></td>
+    </tr>
+    <tr>
+      <td><strong>Fecha:</strong></td>
+      <td><strong>Calificación:</strong></td>
+    </tr>
+  </table>
+
+  <div class="section-title">Instrucciones</div>
+  <p>${instrucciones}</p>
+
+  <div class="section-title">Preguntas</div>
+  ${preguntasHtml}
+
+  <div style="margin-top: 25px; border-top: 2px solid #1e3a2f; padding-top: 10px;">
+    <strong>Puntaje total: ${Number(examen.puntajeTotal) || 0} puntos</strong>
+  </div>
+
+  <table class="signatures">
+    <tr>
+      <td>
+        <div class="sign-line"></div>
+        <strong>Firma del alumno</strong>
+      </td>
+      <td>
+        <div class="sign-line"></div>
+        <strong>Firma del docente</strong>
+      </td>
+    </tr>
+  </table>
+
+  <!-- SALTO DE PÁGINA: SECCIÓN EXCLUSIVA DEL DOCENTE -->
+  <div class="teacher-page">
+
+    <div class="header">
+      <div class="header-tag">Nueva Escuela Mexicana • Material docente</div>
+      <div class="header-title">Clave de respuestas y evaluación</div>
+      <div class="subtitle">${titulo} — ${grado}</div>
+    </div>
+
+    <div class="teacher-warning">
+      USO EXCLUSIVO DEL DOCENTE. NO ENTREGAR ESTA SECCIÓN AL ALUMNO.
+    </div>
+
+    <div class="section-title">Clave de respuestas</div>
+
+    <table class="teacher-table">
+      <thead>
+        <tr>
+          <th style="width: 45px;">N.º</th>
+          <th>Respuesta correcta o respuesta esperada</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${claveHtml || '<tr><td colspan="2">No se generó una clave de respuestas.</td></tr>'}
+      </tbody>
+    </table>
+
+    <div class="section-title">Criterios de evaluación</div>
+
+    <table class="teacher-table">
+      <thead>
+        <tr>
+          <th>Criterio</th>
+          <th>Descripción</th>
+          <th style="width: 75px;">Puntos</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${criteriosHtml || '<tr><td colspan="3">No se generaron criterios de evaluación.</td></tr>'}
+      </tbody>
+    </table>
+
+    <div class="section-title">Recomendaciones para el docente</div>
+
+    <div class="recommendations">
+      ${escapeHtml(examen.recomendacionesDocente || 'Revisar los resultados e identificar los aprendizajes que requieren reforzamiento.').replace(/\n/g, '<br/>')}
+    </div>
+
+    <div style="margin-top: 20px;">
+      <strong>Puntaje total del examen:</strong>
+      ${Number(examen.puntajeTotal) || 0} puntos
+    </div>
+
+    <table class="signatures">
+      <tr>
+        <td>
+          <div class="sign-line"></div>
+          <strong>Docente responsable</strong>
+        </td>
+        <td>
+          <div class="sign-line"></div>
+          <strong>Dirección escolar</strong>
+        </td>
+      </tr>
+    </table>
+
+  </div>
+</body>
+</html>
+  `;
+
+  const blob = new Blob(['\ufeff', htmlContent], {
+    type: 'application/msword;charset=utf-8',
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = `Examen_${(examen.grado || 'Primaria').replace(/\s+/g, '_')}_${(examen.campoFormativo || 'NEM').replace(/\s+/g, '_')}.doc`;
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
