@@ -20,26 +20,27 @@ export default async function handler(req, res) {
 
     const esBn = String(estilo || "").trim().toLowerCase() === "bn";
 
-    // Instrucciones ultra estrictas para Blanco y Negro (Libro para colorear)
+    // Instrucciones diseñadas para generar un DIAGRAMA CIENTÍFICO ESQUEMÁTICO (Estilo lámina escolar)
     const instruccionesBn = `
-BLACK AND WHITE COLORING BOOK PAGE, outline vector line art only.
-- Pure solid white background.
-- Clean, thick, smooth black ink contour outlines.
-- ZERO colors, ZERO gray shades, ZERO gradients, ZERO shading, ZERO fills.
-- Large empty white spaces inside objects so children can color them with crayons.
-- Absolutely NO text, NO letters, NO words, NO titles, NO watermarks anywhere.
+SCIENTIFIC EDUCATIONAL DIAGRAM AND INFOGRAPHIC:
+- Traditional school textbook line art diagram explaining: "${texto}".
+- Clear structural composition with distinct stages, process arrows, landscape elements (sun, clouds, mountains, land, water body).
+- Clean black ink outlines on a pure white background, ready to print and photocopy as a worksheet.
+- Technical, neat and precise instructional drawing suitable for elementary school education.
+- Absolutely NO random abstract shapes, NO floating bubbles, NO modern minimalist blobs.
 `;
 
-    // Instrucciones para Color
     const instruccionesColor = `
-BRIGHT COLORFUL EDUCATIONAL ILLUSTRATION:
-- Vibrant elementary school textbook style.
-- Clean white background, centered subject.
-- Absolutely NO text, NO letters, NO words, NO titles anywhere.
+SCIENTIFIC EDUCATIONAL COLOR DIAGRAM AND INFOGRAPHIC:
+- Traditional school textbook color diagram explaining: "${texto}".
+- Clear structural composition with distinct stages, process arrows, and landscape elements.
+- Clean flat vector illustration style, bright and clear educational colors, pure white background.
+- Technical, neat and precise instructional drawing suitable for elementary school education.
+- Absolutely NO random abstract shapes, NO floating bubbles, NO minimalist blobs.
 `;
 
     const prompt = `
-Educational illustration for Mexican elementary school students (ages 6 to 12) about: "${texto}".
+Educational scientific diagram poster for Mexican primary school students: "${texto}".
 ${esBn ? instruccionesBn : instruccionesColor}
 `;
 
