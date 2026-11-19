@@ -1,22 +1,30 @@
 
-const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export async function generarJSON(prompt, instrucciones) {
-  const apiKey = process.env.NVIDIA_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
-    const error = new Error("Falta configurar NVIDIA_API_KEY en Vercel.");
+    const error = new Error("Falta configurar OPENROUTER_API_KEY en Vercel.");
     error.status = 500;
     throw error;
   }
 
-  const model = process.env.NVIDIA_MODEL || "stg/nvidia/nemotron-3.5-bolt-e4b";
+  const model = process.env.OPENROUTER_MODEL;
 
-  const response = await fetch(NVIDIA_URL, {
+  if (!model) {
+    const error = new Error("Falta configurar OPENROUTER_MODEL en Vercel.");
+    error.status = 500;
+    throw error;
+  }
+
+  const response = await fetch(OPENROUTER_URL, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      "HTTP-Referer": "https://edunem.vercel.app",
+      "X-Title": "EduNEM",
     },
     body: JSON.stringify({
       model,
@@ -44,12 +52,11 @@ export async function generarJSON(prompt, instrucciones) {
       payload?.error?.message ||
       payload?.detail ||
       payload?.message ||
-      payload?.title ||
       rawBody ||
-      `NVIDIA respondió HTTP ${response.status}`;
+      `OpenRouter respondió HTTP ${response.status}`;
 
     const error = new Error(
-      `NVIDIA HTTP ${response.status}: ${String(detail).slice(0, 1500)}`
+      `OpenRouter HTTP ${response.status}: ${String(detail).slice(0, 1500)}`
     );
 
     error.status = response.status;
@@ -59,7 +66,7 @@ export async function generarJSON(prompt, instrucciones) {
   const content = payload?.choices?.[0]?.message?.content;
 
   if (typeof content !== "string" || !content.trim()) {
-    throw new Error("NVIDIA no devolvió contenido. Intenta nuevamente.");
+    throw new Error("OpenRouter no devolvió contenido. Intenta nuevamente.");
   }
 
   const cleaned = content.trim()
@@ -83,10 +90,11 @@ export async function generarJSON(prompt, instrucciones) {
 }
 
 export function responderError(res, error) {
-  console.error("EduNEM NVIDIA API:", error);
+  console.error("EduNEM OpenRouter API:", error);
 
   return res.status(error.status || 500).json({
-    error: error.message || "Error al comunicarse con NVIDIA.",
+    error: error.message || "Error al comunicarse con OpenRouter.",
   });
 }
+
 
