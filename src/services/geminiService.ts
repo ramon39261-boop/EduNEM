@@ -3,7 +3,9 @@ import {
   Planeacion,
   Proyecto,
   Examen,
-  ConfiguracionExamen
+  ConfiguracionExamen,
+  FichaMatematica,
+  ConfiguracionFichasMatematicas
 } from '../types';
 
 export async function generarPlaneacion(prompt: string, signal?: AbortSignal): Promise<Planeacion> {
@@ -175,9 +177,9 @@ export async function generarExamen(
 // ==========================================
 
 export async function generarFichasMatematicas(
-  configuracion: any,
+  configuracion: ConfiguracionFichasMatematicas,
   signal?: AbortSignal
-): Promise<any> {
+): Promise<FichaMatematica> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90000);
   const combinedSignal = signal || controller.signal;
@@ -207,7 +209,7 @@ export async function generarFichasMatematicas(
       throw new Error('La IA no devolvió una ficha válida. Intenta nuevamente.');
     }
 
-    return data;
+    return data as FichaMatematica;
   } catch (err: any) {
     if (err.name === 'AbortError') {
       throw new Error('La generación de las fichas tardó demasiado tiempo. Intenta nuevamente.');
