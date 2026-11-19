@@ -3,12 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import ExamenView from './components/ExamenView';
+import FichasMatematicasView from './components/FichasMatematicasView';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   BookOpen, 
   Layout, 
   Image as ImageIcon, 
+  Calculator,
   Download, 
   FileText, 
   ChevronRight, 
@@ -88,7 +90,7 @@ const EJEMPLOS_ILUSTRACION = [
   "Sistema solar con los planetas alrededor del sol"
 ];
 
-type View = 'home' | 'planeacion' | 'proyecto' | 'ilustracion' | 'examen';
+type View = 'home' | 'planeacion' | 'proyecto' | 'ilustracion' | 'examen' | 'fichas-matematicas';
 
 const staggerContainer = {
   hidden: { opacity: 0 },
@@ -131,6 +133,7 @@ export function App() {
     case 'proyecto': return <ProyectoView />;
     case 'ilustracion': return <IlustracionView />;
     case 'examen': return <ExamenView />;
+    case 'fichas-matematicas': return <FichasMatematicasView />;
     default: return <HomeView setView={setCurrentView} />;
   }
 };
@@ -234,6 +237,13 @@ export function App() {
                icon={<GraduationCap size={19} />}
                label="Exámenes"
                badge="NEM"
+              />
+              <NavItem
+                active={currentView === 'fichas-matematicas'}
+                onClick={() => { setCurrentView('fichas-matematicas'); setIsSidebarOpen(false); }}
+                icon={<Calculator size={19} />}
+                label="Fichas de Matemáticas"
+                badge="NEM"
               />
               <NavItem 
                 active={currentView === 'proyecto'} 
@@ -433,6 +443,14 @@ function HomeView({ setView }: { setView: (v: View) => void }) {
             title="Láminas Educativas"
             description="Busca esquemas, diagramas y recursos visuales institucionales para tus clases en tiempo real."
             onClick={() => setView('ilustracion')}
+          />
+          <FeatureCard 
+            icon={<Calculator className="text-violet-600 dark:text-violet-400" size={24} />}
+            iconBg="bg-violet-50 dark:bg-violet-500/15"
+            tag="Matemáticas"
+            title="Fichas de Matemáticas"
+            description="Genera ejercicios de matemáticas por grado, tema y dificultad, con respuestas y procedimientos para el docente."
+            onClick={() => setView('fichas-matematicas')}
           />
         </div>
       </motion.div>
