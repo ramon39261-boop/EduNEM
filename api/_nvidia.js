@@ -33,7 +33,7 @@ export async function generarJSON(prompt, instrucciones) {
         { role: "user", content: prompt },
       ],
       temperature: 0.35,
-      max_tokens: 5000,
+      max_tokens: 3000,
       stream: false,
     }),
   });
