@@ -169,3 +169,51 @@ export async function generarExamen(
     clearTimeout(timeoutId);
   }
 }
+
+// ==========================================
+// GENERADOR DE FICHAS DE MATEMÁTICAS
+// ==========================================
+
+export async function generarFichasMatematicas(
+  configuracion: any,
+  signal?: AbortSignal
+): Promise<any> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90000);
+  const combinedSignal = signal || controller.signal;
+
+  try {
+    const response = await fetch('/api/fichas-matematicas', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(configuracion),
+      signal: combinedSignal,
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Error al generar las fichas de matemáticas.');
+    }
+
+    if (
+      !data ||
+      typeof data.titulo !== 'string' ||
+      !Array.isArray(data.ejercicios) ||
+      data.ejercicios.length === 0
+    ) {
+      throw new Error('La IA no devolvió una ficha válida. Intenta nuevamente.');
+    }
+
+    return data;
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      throw new Error('La generación de las fichas tardó demasiado tiempo. Intenta nuevamente.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
