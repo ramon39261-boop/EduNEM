@@ -99,3 +99,62 @@ export interface ConfiguracionExamen {
   dificultad: "basica" | "intermedia" | "avanzada" | "mixta";
 }
 
+// ==========================================
+// TIPOS PARA EL GENERADOR DE FICHAS DE MATEMÁTICAS
+// ==========================================
+
+export type TemaMatematicas =
+  | "Suma y resta"
+  | "Multiplicación y división"
+  | "Fracciones"
+  | "Geometría"
+  | "Medición"
+  | "Patrones numéricos"
+  | "Problemas matemáticos"
+  | "Números y operaciones"
+  | "Mixto";
+
+export type DificultadMatematica =
+  | "basica"
+  | "intermedia"
+  | "avanzada"
+  | "mixta";
+
+export type TipoEjercicioMatematico =
+  | "operacion"
+  | "problema"
+  | "completar"
+  | "comparar"
+  | "ordenar"
+  | "geometria"
+  | "fracciones"
+  | "patrones";
+
+export interface EjercicioMatematico {
+  numero: number;
+  tipo: TipoEjercicioMatematico;
+  enunciado: string;
+  opciones?: string[];
+  respuestaCorrecta: string;
+  procedimiento?: string;
+  espacioRespuesta?: number;
+}
+
+export interface FichaMatematica {
+  titulo: string;
+  grado: string;
+  tema: string;
+  objetivo: string;
+  instrucciones: string;
+  ejercicios: EjercicioMatematico[];
+  recomendacionesDocente?: string;
+}
+
+export interface ConfiguracionFichasMatematicas {
+  grado: string;
+  tema: TemaMatematicas;
+  subtema?: string;
+  cantidadEjercicios: number;
+  dificultad: DificultadMatematica;
+  instruccionesAdicionales?: string;
+}
